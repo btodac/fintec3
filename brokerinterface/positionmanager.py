@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed May  3 11:39:36 2023
+
+@author: mtolladay
+"""
+import time
+from threading import Thread, Event, RLock
+import json
+import logging
+import pandas as pd
+from trading_ig.lightstreamer import Subscription
+
+log = logging.getLogger(__name__)
+
+RED = "\x1b[31;1m"
+GREEN = "\x1b[32;1m"
+YELLOW = "\x1b[33;1m"
+BLUE = "\x1b[34;1m"
+PINK = "\x1b[35;1m"
+CYAN = "\x1b[36;1m"
+WHITE = "\x1b[37;1m"
+
+def direction_to_int(direction):
+    return {"BUY" : 1, "SELL" : -1}[direction]
+
+def direction_invert(direction):
+    return {"BUY" : "SELL", "SELL" : "BUY"}[direction]
+
+class IGinputError(ValueError):
+    def __init__(self):
+        pass
+    
+class PositionManager(object):
+    
+    def __init__(self, acc_number, open_fcn, close_fcn, n_max_positions=1):
+        self.open_fcn = open_fcn
+        self.close_fcn = close_fcn
+        self.n_max_positions = n_max_positions
+        
+        self._positions_lock = RLock()
+        self.positions = {}
+        self.closed_positions = []
+        
+        self._cooldown_end_time = pd.Timestamp.now('UTC')
+        self._is_in_cooldown = False
+        
+        self.subscription = Subscription(mode="DISTINCT", 
+                                         items=["TRADE:" + acc_number], 
+                                         fields=["OPU"])
+        self.subscription.addlistener(self.position_watcher)
+        self.sub_id = None
+        self._stop_updating = Event()
+        self.update_thread = Thread(target=self.update_loop, name="Position manager updater")
+        self.update_thread.start()
+    
+    def __del__(self):
+        self.stop()
+        self.open_fcn = None
+        self.close_fcn = None
+             
+    def stop(self,):
+        self.clear()
+        self._stop_updating.set()
+        self.update_thread.join()
+        filename = '/home/mtolladay/Documents/finance/trades/' \
+            + 'PosManTrades_' + pd.Timestamp.now(tz='UTC').strftime('%Y-%m-%d_%X')
+            
+        with open(filename,'w') as f:
+            print(pd.DataFrame(self.closed_positions).as_string(), file=f)
+        
+    def update_loop(self):
+        while not self._stop_updating.wait(1):
+            now_time = pd.Timestamp.now('UTC')
+            if now_time > self._cooldown_end_time:
+                self._is_in_cooldown = False
+            
+            with self._positions_lock:
+                for dealId in list(self.positions.keys()):
+                    if now_time > self.positions[dealId]['endtime']:
+                        self.close_position(dealId, outcome="timeout/external")
+                    
+    def position_watcher(self, stream_data):
+        data = stream_data['values']['OPU']
+        if data is not None:
+            opu = json.loads(data)
+            direction = direction_to_int(opu['direction'])
+            dealId = opu['dealId']
+            status = opu['status']
+            level = opu['level']
+            dlevel = direction * level
+            stopLevel = direction * opu['stopLevel']
+            limitLevel = direction * opu['limitLevel']
+            if status == "OPEN":
+                log.info(GREEN + f'Deal opened {dealId} at {level}' + WHITE)
+            elif status == "DELETED":
+                reason = None
+                if limitLevel is not None:
+                    if dlevel >= limitLevel:
+                        reason = "take profit hit"
+                        color = BLUE
+
+                if stopLevel is not None:
+                    if dlevel <= stopLevel:
+                        reason = "stop loss hit"
+                        color = RED
+                        
+                if reason is None:
+                    reason = 'timeout/external'
+                    color = YELLOW
+                    
+                self.close_position(dealId, reason)
+                log.info(color + f'Deal {dealId} closed due to {reason} price = {level}' + WHITE)
+            elif status == "UPDATED":
+                log.info(CYAN + f'Deal {dealId} {status} current = {level}' + WHITE)
+                
+    def open_position(self, direction, details):
+        if len(self.positions) >= self.n_max_positions:
+            text = PINK + "Unable to open position max positions are active"
+        elif self._is_in_cooldown:
+            text = PINK + "Unable to open position, bot in cooldown"
+        else:
+            self._open_position(direction, details)
+            text = GREEN + "Position opened"
+        log.info(text + WHITE)
+        
+    def close_position(self, dealId, outcome):
+        log.info(f'Attempting to close position {dealId} due to {outcome}')
+        is_closed = True
+        with self._positions_lock:
+            if dealId in self.positions.keys():
+                if outcome.lower() in ["timeout/external","reverse posiiton","clearing"]:
+                    is_closed = self._close_position(dealId)
+                elif outcome.lower() == "stop loss hit":
+                    self._is_in_cooldown = True
+                    self._cooldown_end_time = pd.Timestamp.now('UTC') \
+                        + pd.Timedelta(minutes=self.positions[dealId]['cooldown'])
+                elif outcome.lower() == "take profit hit":
+                    pass
+    
+                if is_closed:
+                    self.closed_positions = self.positions.pop(dealId)
+                else:
+                    print(f'ERROR failed to close position {dealId}!')
+            else:
+                log.info(f"Deal {dealId} is already deleted!")
+            
+    def clear(self, epic=None):
+        with self._positions_lock:
+            if epic is None:
+                dealIds = list(self.positions.keys())
+            else:
+                dealIds = [dealId for dealId, pos_data in self.positions.items() if pos_data['epic'] == epic]
+                
+            for dealId in dealIds:
+                self.close_position(dealId, "CLEARING")
+    
+    def _open_position(self, direction, details):
+        i = 0
+        pos_data = None
+        while True and i < 5:
+            try:
+                pos_data = self.open_fcn(
+                    currency_code=details['currency_code'],
+                    direction=direction,
+                    epic=details['epic'],
+                    order_type='MARKET',
+                    expiry=details['expiry'],
+                    force_open='true',
+                    guaranteed_stop='false',
+                    size=details['size'], 
+                    level=None,
+                    limit_distance=max(details['min_distance'], details['take_profit']),
+                    limit_level=None,
+                    quote_id=None,
+                    stop_level=None,
+                    stop_distance=max(details['min_distance'], details['stop_loss']), 
+                    trailing_stop=str(details['trailing_stop']).lower(),#'false'/'true',
+                    trailing_stop_increment=details['trailing_stop_increment'],
+                    )
+            
+                #log.info(print(pos_data))
+
+            except:
+                i += 1
+                time.sleep(0.1)
+                continue
+            else:
+                if pos_data['dealStatus'] == "REJECTED":
+                    log.info(print(pos_data))
+                    raise IGinputError
+                pos_data.update(details._dict)
+                t_start = pd.Timestamp(pos_data['date']).tz_localize('UTC')
+                pos_data['endtime'] = t_start + pd.Timedelta(minutes=details['time_limit'])
+                self.positions[pos_data['dealId']] = pos_data
+            break
+        
+        log.debug(pos_data)
+            
+    def _close_position(self, dealId):
+        log.info('Closing from bot')
+        success = False
+        i = 0
+        while True and i < 5:
+            try:
+                pos_data = self.close_fcn(
+                    deal_id=dealId,
+                    direction=direction_invert(self.positions[dealId]['direction']),
+                    epic=None,
+                    expiry=None,
+                    level=None,
+                    order_type='MARKET',
+                    quote_id=None,
+                    size=self.positions[dealId]['size'],
+                    session=None,
+                )
+                #print(pos_data)
+            except Exception:
+                #print(traceback.print_exc())
+                i += 1
+                time.sleep(0.2)
+                continue
+            else:
+                success = True
+                log.info(f'Position {dealId} closed')
+            break
+        return success
