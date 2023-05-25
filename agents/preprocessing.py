@@ -40,6 +40,10 @@ class ObservationBuilder(object):
                     )
                 else:
                     feature = data['Close'] - data['Open']
+            elif 'trend' in c:
+                t_string = c.split('_')[0]
+                trend = data['Close'] - data['Open']
+                feature = trend.rolling(t_string).mean()
             elif 'high' in c:
                 t_string = c.split('_')[0]
                 h = data.loc[:,'High'].rolling(t_string).max()

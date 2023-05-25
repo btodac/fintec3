@@ -10,7 +10,8 @@ import logging
 import numpy as np
 import pandas as pd
 
-from agents.preprocessor.preprocessing import ObservationBuilder
+from agents.preprocessing import ObservationBuilder
+from agents.targetgenerators import OrderBasedTargetGen
 from utillities.timesanddates import get_ticker_time_zone, opening_and_closing_times
 
 log = logging.getLogger(__name__)
@@ -70,7 +71,7 @@ PARAMS = {
 
 
 class Agent(object):
-    def __init__(self, ticker, columns, params=None, observer=None):
+    def __init__(self, ticker, columns, params=None, observer=None, target_generator=None):
 
         self._params = {
             'ticker': ticker,
@@ -81,11 +82,22 @@ class Agent(object):
             self._params.update(PARAMS[ticker])
         else:
             self._params.update(params)
-            
+        
         self._set_tradeable_time(ticker)
+        
         if observer is None:
             self.observer = ObservationBuilder(columns, self._opening_time, 
                                                self._closing_time, self._params['tz'])
+        else:
+            self.observer = observer
+        if target_generator is None:
+            self.target_generator = OrderBasedTargetGen(ticker, 
+                                                        self._params['take_profit'], 
+                                                        self._params['stop_loss'], 
+                                                        self._params['time_limit']
+                                                        )
+        else:
+            self.target_generator = target_generator
     
     def fit(self, training_data, validation_data):
         raise NotImplementedError()
@@ -106,13 +118,20 @@ class Agent(object):
         prob = self.make_prediction(observations)
         pred = np.argmax(prob, axis=1)
         return pred, prob, order_datetimes
-        
-    def _set_tradeable_time(self, ticker):
+    
+    def get_observations_and_targets(self, data):
+        if data.index.tz != self._params['tz']:
+            data.index = data.index.tz_convert(self._params['tz'])
+        observations, order_datetimes = self.observer.make_observations(data)
+        targets = self.target_generator.get_targets(data, order_datetimes)
+        return observations, targets, order_datetimes
+    
+    def _set_tradeable_time(self, ticker,):
         opening_time, closing_time = opening_and_closing_times(ticker)
         opening_time = opening_time.tz_convert(self._params['tz'])
         closing_time = closing_time.tz_convert(self._params['tz'])
-        if not np.isnan(self._params['live_tl']):
-            closing_time -= pd.Timedelta(minutes=self._params['live_tl'])
+        if not np.isnan(self._params['to']):
+            closing_time -= pd.Timedelta(minutes=self._params['to'])
         else:
             closing_time -= pd.Timedelta(minutes=1)
         self._opening_time = opening_time

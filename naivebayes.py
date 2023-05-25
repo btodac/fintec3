@@ -7,46 +7,27 @@ Created on Fri Mar 17 21:31:29 2023
 """
 import pandas as pd
 
-from agents.naivebayes.bayesmodel import BayesAgent, BayesResults
+from agents.bayesagent import BayesAgent
+from agents.targetgenerators import TrendBasedTargetGen
+from agenttesting.results import Results
+#from results.results import Results
 from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
-
 save_model = False
 ticker = "^NDX"
-params =  {
-    'take_profit' : 60,
-    'stop_loss' : 10,
-    'time_limit' : 15,
-    'up' : 30,
-    'down' : -30,
-    'to' : 8,
-    'live_tl' : 8,
-    }
 # Observation parameters
 columns = [
         '2min_mom','4min_mom',#'8min_mom','32min_mom','64min_mom','128min_mom','256min_mom',
         '8min_mean_dist','16min_mean_dist','32min_mean_dist','64min_mean_dist',
         '128min_mean_dist','256min_mean_dist','512min_mean_dist',
+        '2min_trend','4min_trend','8min_trend','16min_trend','32min_trend','64min_trend',
+        #'128min_trend','256min_trend','512min_trend',
         #'5min_15min_mean_diff',
-        #'30min_std',#'30min_std',#'30min_std',#'60min_std',#'15min_std',
-        '15min_skew','30min_skew','60min_skew','120min_skew','240min_skew',
+        #'30min_std',#'8min_std','16min_std','32min_std',#'min_std',#'15min_std',
+        #'30min_skew',#'16min_skew','32min_skew',#'120min_skew','240min_skew',
         #'20min_kurt', #'5min_kurt',
     ]
-# Ideal for GDAXI
-#columns = ['2min_mom','4min_mom','8min_mean_dist','16min_mean_dist','32min_mean_dist','64min_mean_dist','5min_15min_mean_diff','10min_std','10min_skew',]
-#columns = ['2min_mom','32min_mom','64min_mom','10min_skew', '20min_skew', '20min_kurt']
-#columns = ['5min_mean', '20min_kurt', '5min_mom', '10min_skew','20min_skew', '15min_std']
-#columns = ['5min_mom','15min_mom','30min_mom','60min_mom','10min_skew','20min_skew']
-# Ideal for NDX
-#columns = ['2min_mom','4min_mom','8min_mom','16min_mom','32min_mean_dist','64min_mean_dist','128min_mean_dist','30min_std','10min_skew','20min_skew',]
-#columns = ['2min_mom','4min_mom','8min_mom','16min_mom','32min_mom','64min_mom','10min_skew','20min_skew']
-#columns = ['5min_mom','15min_mom','30min_mom','60min_mom','10min_skew','30min_skew','10min_kurt']
-#columns = ['10min_mean', '20min_kurt', '5min_mom', '10min_skew','20min_skew', '15min_std']
-# Ideal for EUR=X
-#columns = ['2min_mom','16min_mom','32min_mom','64min_mom','10min_skew','20min_skew',]
-
-
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 split_time = pd.Timestamp("2022-11-01", tz='UTC')
@@ -79,12 +60,20 @@ validation_data = validation_data.tz_convert(tz)
 #training_data = training_data.between_time("11:30", '16:00')
 #validation_data = validation_data.between_time("11:30", '16:00')
 
-model = BayesAgent(ticker, columns, params=params)
+
+model = BayesAgent(ticker, columns,)# params=params)
+target_generator = TrendBasedTargetGen(model._params['up'], 
+                                       model._params['down'], 
+                                       model._params['time_limit'])
+model.target_generator = target_generator
 model.fit(training_data, validation_data)
 
 predictions, probabilities, order_datetimes = model.predict(validation_data, ticker)
-results = BayesResults(predictions, order_datetimes, ticker, take_profit=40, stop_loss=10,
-                       time_limit=10, data=validation_data,)
+results = Results(predictions, order_datetimes, ticker, 
+                  take_profit=model._params['take_profit'], 
+                  stop_loss=model._params['stop_loss'],
+                  time_limit=model._params['time_limit'], 
+                  data=validation_data,)
 
 print(results.positions_results.to_string(float_format=lambda x : f'{x:.3f}'))
 results.plot_all_signals_profits()
@@ -98,13 +87,14 @@ if save_model:
     import pickle
     import string
     import random
-    model_name = 'NaiveBayes_' + ticker.strip("+^") + '_' +\
+    model_name = 'NB_' + ticker.strip("+^") + '_' +\
         ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    model_dir = '/home/mtolladay/Documents/finance/NaiveBayesModels/' + model_name + '/' 
+    model_dir = '/home/mtolladay/Documents/finance/NBmodels/' + model_name + '/' 
     os.makedirs(model_dir)
-    filename = model_dir + 'model.pkl'
-    with open(filename, 'wb') as f:
+    with open(model_dir + 'model.pkl', 'wb') as f:
         pickle.dump(model, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(model_dir + 'results.pkl', 'wb') as f:
+        pickle.dump(results, f, protocol=pickle.HIGHEST_PROTOCOL)
     print('##########################################################################')
     print(f'model saved: {model_name}')
     print('##########################################################################')

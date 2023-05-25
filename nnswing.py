@@ -5,20 +5,14 @@ Created on Thu May  4 10:40:34 2023
 
 @author: mtolladay
 """
-import sys
-
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-if not hasattr(__builtins__,'__IPYTHON__'):
-    matplotlib.use('Agg')
-
-
 import pandas as pd
-sys.path.insert(1, '/home/mtolladay/jobfiles/PyProjects/fintec2')
-from datahandling.datastore import Market_Data_File_Handler
-from NNbot import NNModel, NNResults
+
+from agents.targetgenerators import TrendBasedTargetGen
+from agents.mlp import NNAgent
+from agenttesting.results import SteeringResults
 from utillities.timesanddates import get_ticker_time_zone
+from utillities.datastore import Market_Data_File_Handler
 
 save_model = False
 ticker = "^NDX"
@@ -30,38 +24,58 @@ columns = [
         '2min_mom','4min_mom',#'8min_mom','32min_mom','64min_mom','128min_mom','256min_mom',
         '8min_mean_dist','16min_mean_dist','32min_mean_dist','64min_mean_dist',
         '128min_mean_dist','256min_mean_dist','512min_mean_dist',
-        #'15min_stoch_osc',#'20min_stoch_osc',
-        #'5min_15min_mean_diff',
+        '2min_trend','4min_trend','8min_trend','16min_trend','32min_trend','64min_trend',
         '10min_std','15min_std','30min_std','60min_std','120min_std',#'240min_std','480min_std',
         '10min_skew','15min_skew','30min_skew','60min_skew','120min_skew',#'240min_skew','480min_skew',
-        #'10min_kurt', '15min_kurt','30min_kurt','60min_kurt','120min_kurt',#'240min_kurt','480min_kurt',
     ]
 
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
-split_time = pd.Timestamp("2022-12-01", tz='UTC')
+split_time = pd.Timestamp("2023-01-01", tz='UTC')
 training_data = all_data.iloc[ all_data.index.to_numpy() < split_time ]
 validation_data = all_data.iloc[all_data.index.to_numpy() >= split_time]
 
 tz = get_ticker_time_zone(ticker) #'^GDAXI'
 training_data = training_data.tz_convert(tz)
 validation_data = validation_data.tz_convert(tz)
-#training_data = training_data.between_time("09:30", '11:30')
+#training_data = training_data.between_time("10:00", '15:30')
 #validation_data = validation_data.between_time("09:30", '11:30')
-
-model = NNModel(training_data, validation_data, ticker, columns,)
+params = {
+    'take_profit': 40,#10
+    'stop_loss': 10, #10
+    'time_limit': 10,#5,
+    'live_tp': 50,
+    'live_sl': 10,
+    'live_tl': np.nan,
+    'up' : 40,
+    'down' : 40,
+    'to' : 30,
+    }
+target_generator = TrendBasedTargetGen(
+    up=params['up'], 
+    dowm=params['down'], 
+    time_limit=params['to']
+    )
+model = NNAgent(
+    ticker, columns, params=params, target_generator=target_generator
+    )
 #for i in range(10):
 history = model.fit(training_data, validation_data)
 
 predictions, probabilities, order_datetimes = model.predict(validation_data, ticker)
-results = NNResults(predictions, order_datetimes, validation_data, ticker,
+results = SteeringResults(predictions, order_datetimes, ticker,
                     take_profit=model._params['live_tp'],
                     stop_loss=model._params['live_sl'],
                     time_limit=model._params['live_tl'],
+                    data=validation_data,
                     )
 
-print(results.positions_outcome.to_string(float_format=lambda x : f'{x:.3f}'))
+print(results.positions_results.to_string(float_format=lambda x : f'{x:.3f}'))
 results.plot_all_signals_profits()
+results.plot_position_profit()
+results.plot_position_distribution()
+results.plot_position_profit_distribution()
+results.plot_weekly_profit()
 
 if save_model:
     import os
