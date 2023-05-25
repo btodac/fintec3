@@ -24,6 +24,7 @@ columns = [
         '8min_mean_dist','16min_mean_dist','32min_mean_dist','64min_mean_dist',
         '128min_mean_dist','256min_mean_dist','512min_mean_dist',
         '2min_trend','4min_trend','8min_trend','16min_trend','32min_trend','64min_trend',
+        '128min_trend','256min_trend','512min_trend',
         '10min_std','15min_std','30min_std','60min_std','120min_std',#'240min_std','480min_std',
         '10min_skew','15min_skew','30min_skew','60min_skew','120min_skew',#'240min_skew','480min_skew',
     ]
@@ -44,7 +45,7 @@ model = NNAgent(ticker, columns,)
 #for i in range(10):
 history = model.fit(training_data, validation_data)
 
-predictions, probabilities, order_datetimes = model.predict(validation_data, ticker)
+predictions, probabilities, order_datetimes = model.predict(validation_data)
 results = Results(predictions, order_datetimes, ticker,
                     take_profit=model._params['live_tp'],
                     stop_loss=model._params['live_sl'],

@@ -62,7 +62,7 @@ model = NNAgent(
 #for i in range(10):
 history = model.fit(training_data, validation_data)
 
-predictions, probabilities, order_datetimes = model.predict(validation_data, ticker)
+predictions, probabilities, order_datetimes = model.predict(validation_data)
 results = SteeringResults(predictions, order_datetimes, ticker,
                     take_profit=model._params['live_tp'],
                     stop_loss=model._params['live_sl'],

@@ -68,7 +68,7 @@ target_generator = TrendBasedTargetGen(model._params['up'],
 model.target_generator = target_generator
 model.fit(training_data, validation_data)
 
-predictions, probabilities, order_datetimes = model.predict(validation_data, ticker)
+predictions, probabilities, order_datetimes = model.predict(validation_data)
 results = Results(predictions, order_datetimes, ticker, 
                   take_profit=model._params['take_profit'], 
                   stop_loss=model._params['stop_loss'],
