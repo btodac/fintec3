@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from agents.targetgenerators import TrendBasedTargetGen
-from agents.mlp import NNAgent
+from agents.nnagent import NNAgent
 from agenttesting.results import SteeringResults
 from utillities.timesanddates import get_ticker_time_zone
 from utillities.datastore import Market_Data_File_Handler
@@ -25,6 +25,7 @@ columns = [
         '8min_mean_dist','16min_mean_dist','32min_mean_dist','64min_mean_dist',
         '128min_mean_dist','256min_mean_dist','512min_mean_dist',
         '2min_trend','4min_trend','8min_trend','16min_trend','32min_trend','64min_trend',
+        '128min_trend','256min_trend','512min_trend',
         '10min_std','15min_std','30min_std','60min_std','120min_std',#'240min_std','480min_std',
         '10min_skew','15min_skew','30min_skew','60min_skew','120min_skew',#'240min_skew','480min_skew',
     ]
@@ -43,17 +44,17 @@ validation_data = validation_data.tz_convert(tz)
 params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
-    'time_limit': 10,#5,
-    'live_tp': 50,
+    'time_limit': 30,#5,
+    'live_tp': 40,
     'live_sl': 10,
-    'live_tl': np.nan,
+    'live_tl': 30,#np.inf,
     'up' : 40,
-    'down' : 40,
+    'down' : -40,
     'to' : 30,
     }
 target_generator = TrendBasedTargetGen(
     up=params['up'], 
-    dowm=params['down'], 
+    down=params['down'], 
     time_limit=params['to']
     )
 model = NNAgent(

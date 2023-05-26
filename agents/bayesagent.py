@@ -13,7 +13,6 @@ import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn'
 
 from agents import Agent
-from agenttesting.results import Results
 
 log = logging.getLogger(__name__)
 
@@ -75,15 +74,21 @@ PARAMS = {
 class BayesAgent(Agent):
     def __init__(self, ticker, columns, params=None, observer=None,
                  target_generator=None):
+        '''
+        BayesAgent is a subclass of Agent the uses a naive Bayes
+        classifier to make predictions
+
+        '''
         if params is None:
             params = PARAMS[ticker]
         super().__init__(ticker, columns, params=params, observer=observer,
                          target_generator=target_generator)
             
     def make_prediction(self, observations):
+        # Make sure single observations have correct shape
         if len(observations.shape) != 2:
             observations = observations.squeeze()[np.newaxis,:]
-
+        # Calculate posteriors
         probs = []
         for k, prior in self.priors.items():
             pde_vals = []

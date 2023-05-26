@@ -84,8 +84,30 @@ PARAMS = {
 
 
 class NNAgent(Agent):
-    def __init__(self, ticker, columns, params=None, observer=None, 
-                 target_generator=None, both_directions_hold=False):
+    def __init__(self, ticker: str, columns: list, params=None, 
+                 observer=None, target_generator=None):
+        '''
+        NNAgent is a subclass of Agent that uses a multi layer 
+        perceptron model to make predictions
+
+        Parameters
+        ----------
+        ticker : str
+            Ticker of financial product
+        columns : list
+            list of strings containing features
+        params : dict, optional
+            see Agent.
+        observer : TYPE, optional
+           see Agent
+        target_generator : TYPE, optional
+            see Agent
+
+        Returns
+        -------
+        None.
+
+        '''
         
         if params is None:
             params = PARAMS[ticker]
@@ -93,7 +115,6 @@ class NNAgent(Agent):
         super().__init__(ticker, columns, params=params, observer=observer,
                          target_generator=target_generator)
         
-        self._both_as_hold = both_directions_hold
         self.max_norm = 4
         self.dropout = 0.2
         self._model = self._create_model(input_data_size=len(columns),
@@ -126,9 +147,8 @@ class NNAgent(Agent):
         class_weight = y_train.mean(axis=0)
         class_weight = class_weight.max() / class_weight
         print(f'Normalised weights: {class_weight}')
-        class_weight[:2] = 0.95 * class_weight[:2]
-        #class_weight = np.array([1.1,1.1,1])#np.ones(3)
-        print(class_weight)
+        if any(class_weight>4):
+            print('The class weights are large enough to cause significant over fitting')
         class_weight = dict(zip(np.arange(len(class_weight)), class_weight))
     
         x_valid, y_valid, _ = self.get_observations_and_targets(validation_data)
@@ -137,7 +157,7 @@ class NNAgent(Agent):
         callback = tf.keras.callbacks.EarlyStopping(
             #monitor='val_cat_acc', mode="max",
             monitor='val_loss', mode='min',
-            patience=10,
+            patience=20,
             restore_best_weights=True,
             )
         optimizer = keras.optimizers.Adam(

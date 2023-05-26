@@ -12,6 +12,10 @@ from agenttesting.results import OutcomeSimulator
 class TrendBasedTargetGen(object):
     
     def __init__(self, up, down, time_limit):
+        if np.sign(up) != 1:
+            raise ValueError("Sign of argument up must be positive")
+        if np.sign(down) != -1:
+            raise ValueError("Sign of argument down must be negative")
         self.up = up
         self.down = down
         self.time_limit = time_limit
@@ -27,17 +31,22 @@ class TrendBasedTargetGen(object):
         zeroing = traces[:,0][:,np.newaxis]
         traces = (traces - zeroing) / zeroing
         ups = self.up / zeroing
-        downs = self.down / zeroing
-        tx = 1.2 * self.time_limit
+        downs = self.down / zeroing # NOTE: downs must be negative!
+        deltas = traces[:,1:] - traces[:,:-1]
+        tx = 5 * self.time_limit
+        min_up_delta = (ups / tx)
+        min_down_delta = (downs / tx)
 
-        is_buy = np.logical_and( 
-                                traces[:,-1] > ups.squeeze(),
-                                np.mean(traces[:,1:] >= ups / tx, axis=1) >= 0.6,
-                            )
+        is_buy = np.logical_and(
+            # First check that the final value is gt the up value
+            traces[:,-1] > ups.squeeze(),
+            # Second check the change over time is generally greater than the min change
+            np.mean(deltas >= min_up_delta, axis=1) >= 0.5,
+            )
         is_sell = np.logical_and( 
-                                traces[:,-1] < downs.squeeze(),
-                                np.mean(traces[:,1:] <= downs / tx, axis=1) >= 0.6,
-                            )#traces[:,-1] < down
+            traces[:,-1] < downs.squeeze(),
+            np.mean(deltas <= min_down_delta, axis=1) >= 0.5,
+            )#traces[:,-1] < down
         is_hold = np.logical_not(np.logical_xor(is_buy, is_sell))
         targets = np.stack((is_buy, is_sell, is_hold)).T
         return targets
