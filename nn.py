@@ -10,6 +10,7 @@ import pandas as pd
 
 from agents.nnagent import NNAgent
 from agenttesting.results import Results
+from agents.targetgenerators import TrendBasedTargetGen
 from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
@@ -29,9 +30,16 @@ columns = [
         '10min_skew','15min_skew','30min_skew','60min_skew','120min_skew',#'240min_skew','480min_skew',
     ]
 
+columns = [
+    '2min_mom','4min_mom',
+    '2min_trend','4min_trend','8min_trend','16min_trend','32min_trend','64min_trend',
+    '128min_trend','256min_trend','512min_trend',
+    '10min_std','30min_std',
+    '10min_skew','30min_skew',
+    ]
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
-split_time = pd.Timestamp("2022-12-01", tz='UTC')
+split_time = pd.Timestamp("2023-03-01", tz='UTC')
 training_data = all_data.iloc[ all_data.index.to_numpy() < split_time ]
 validation_data = all_data.iloc[all_data.index.to_numpy() >= split_time]
 
@@ -40,8 +48,23 @@ training_data = training_data.tz_convert(tz)
 validation_data = validation_data.tz_convert(tz)
 #training_data = training_data.between_time("09:30", '11:30')
 #validation_data = validation_data.between_time("09:30", '11:30')
-
-model = NNAgent(ticker, columns,)
+params = {
+    'take_profit': 40,#10
+    'stop_loss': 10, #10
+    'time_limit': 30,#5,
+    'live_tp': 50,
+    'live_sl': 5,
+    'live_tl': 30,#np.inf,
+    'up' : 40,
+    'down' : -40,
+    'to' : 30,
+    }
+target_generator = TrendBasedTargetGen(
+    up=params['up'], 
+    down=params['down'], 
+    time_limit=params['to']
+    )
+model = NNAgent(ticker, columns,params=params)
 #for i in range(10):
 history = model.fit(training_data, validation_data)
 

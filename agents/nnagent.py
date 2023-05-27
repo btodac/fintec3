@@ -149,6 +149,7 @@ class NNAgent(Agent):
         print(f'Normalised weights: {class_weight}')
         if any(class_weight>4):
             print('The class weights are large enough to cause significant over fitting')
+        #class_weight[:2] = 0.75 * class_weight[:2]
         class_weight = dict(zip(np.arange(len(class_weight)), class_weight))
     
         x_valid, y_valid, _ = self.get_observations_and_targets(validation_data)

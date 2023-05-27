@@ -33,7 +33,7 @@ class TrendBasedTargetGen(object):
         ups = self.up / zeroing
         downs = self.down / zeroing # NOTE: downs must be negative!
         deltas = traces[:,1:] - traces[:,:-1]
-        tx = 5 * self.time_limit
+        tx = 10 * self.time_limit
         min_up_delta = (ups / tx)
         min_down_delta = (downs / tx)
 
@@ -41,11 +41,13 @@ class TrendBasedTargetGen(object):
             # First check that the final value is gt the up value
             traces[:,-1] > ups.squeeze(),
             # Second check the change over time is generally greater than the min change
-            np.mean(deltas >= min_up_delta, axis=1) >= 0.5,
+            #np.mean(deltas >= 0, axis=1) >= 0.60,
+            np.mean(deltas >= min_up_delta, axis=1) >= 0.60,
             )
         is_sell = np.logical_and( 
             traces[:,-1] < downs.squeeze(),
-            np.mean(deltas <= min_down_delta, axis=1) >= 0.5,
+            #np.mean(deltas <= 0, axis=1) >= 0.60,
+            np.mean(deltas <= min_down_delta, axis=1) >= 0.60,
             )#traces[:,-1] < down
         is_hold = np.logical_not(np.logical_xor(is_buy, is_sell))
         targets = np.stack((is_buy, is_sell, is_hold)).T

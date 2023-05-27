@@ -120,6 +120,29 @@ class BayesAgent(Agent):
         return self.priors
     
     def _make_pdfs(self, observations, classes, columns):
+        # TEST
+        '''
+        c = np.stack(classes.values()).T
+        print(c.sum(axis=0))
+        indx_inc = np.nonzero(c[:,0])[0]
+        indx_dec = np.nonzero(c[:,1])[0]
+        indx_flat = np.nonzero(c[:,2])[0]
+        indx_1 = np.random.choice(indx_inc,size=5000,replace=False)
+        indx_2 = np.random.choice(indx_dec,size=5000,replace=False)
+        indx_3 = np.random.choice(indx_flat,size=8000,replace=False)
+        indx = np.concatenate((indx_1,indx_2,indx_3))
+        observations = observations[indx,:]
+        for k, t in classes.items():
+            classes[k] = t[indx]
+        self.priors = {
+            'Increasing' : classes['Increasing'].mean(),
+            'Decreasing' : classes['Decreasing'].mean(),   
+            'Flat' : classes['Flat'].mean()
+            }
+        print(self.priors) ### TODO
+        '''
+        # END OF TEST
+        
         # Get pde kernals for the variables
         distributions = {}
         for key, c in classes.items(): #[is_stop_loss, is_take_profit, is_time_out]:
@@ -139,29 +162,3 @@ class BayesAgent(Agent):
             distributions[key] = dists
         
         return distributions 
-
-    def _get_targets(self, data, order_datetimes):
-        prices = data['Close']
-        order_index = prices.index.get_indexer(order_datetimes)
-        indx_i = order_index[:,np.newaxis]
-        indx_r = np.arange(self._params['to'])[np.newaxis,:]
-        index = indx_i + indx_r
-        p = prices.to_numpy()
-        traces = p[index].squeeze()
-        zeroing = traces[:,0][:,np.newaxis]
-        traces = (traces - zeroing) / zeroing
-        ups = self._params['up'] / zeroing
-        downs = self._params['down'] / zeroing
-        tx = 1.2 * self._params['to']
-
-        is_buy = np.logical_and( 
-                                traces[:,-1] > ups.squeeze(),
-                                np.mean(traces[:,1:] >= ups / tx, axis=1) >= 0.6,
-                            )
-        is_sell = np.logical_and( 
-                                traces[:,-1] < downs.squeeze(),
-                                np.mean(traces[:,1:] <= downs / tx, axis=1) >= 0.6,
-                            )#traces[:,-1] < down
-        is_hold = np.logical_not(np.logical_xor(is_buy, is_sell))
-        targets = np.stack((is_buy, is_sell, is_hold)).T
-        return targets
