@@ -14,7 +14,7 @@ from agenttesting.results import Results
 from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
-save_model = False
+save_model = True
 ticker = "^NDX"
 params = {
     'take_profit': 50,#10
@@ -29,9 +29,9 @@ params = {
     }
 # Observation parameters
 columns = [
-    'range', 'mom',
     '2min_mom','4min_mom',#'8min_mom',#'32min_mom','64min_mom','128min_mom','256min_mom',
-    #'4min_mean_dist','8min_mean_dist',#'8min_mean_dist','16min_mean_dist','32min_mean_dist','64min_mean_dist',
+    #'4min_mean_dist','8min_mean_dist',
+    #'16min_mean_dist','32min_mean_dist','64min_mean_dist',
     #'128min_mean_dist','256min_mean_dist','512min_mean_dist',
     '2min_trend','4min_trend','8min_trend','16min_trend','32min_trend','64min_trend',
     '128min_trend','256min_trend','512min_trend',

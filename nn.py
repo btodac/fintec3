@@ -14,7 +14,7 @@ from agents.targetgenerators import TrendBasedTargetGen
 from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
-save_model = False
+save_model = True
 ticker = "^NDX"
 # Observation parameters
 columns = [
@@ -29,7 +29,7 @@ columns = [
         '10min_std','15min_std','30min_std','60min_std','120min_std',#'240min_std','480min_std',
         '10min_skew','15min_skew','30min_skew','60min_skew','120min_skew',#'240min_skew','480min_skew',
     ]
-
+'''
 columns = [
     '2min_mom','4min_mom',
     '2min_trend','4min_trend','8min_trend','16min_trend','32min_trend','64min_trend',
@@ -37,6 +37,7 @@ columns = [
     '10min_std','30min_std',
     '10min_skew','30min_skew',
     ]
+'''
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 split_time = pd.Timestamp("2023-03-01", tz='UTC')

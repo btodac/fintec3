@@ -156,8 +156,8 @@ class NNAgent(Agent):
     
         metrics = [tf.keras.metrics.CategoricalAccuracy(name="cat_acc"),]
         callback = tf.keras.callbacks.EarlyStopping(
-            #monitor='val_cat_acc', mode="max",
-            monitor='val_loss', mode='min',
+            monitor='val_cat_acc', mode="max",
+            #monitor='val_loss', mode='min',
             patience=20,
             restore_best_weights=True,
             )
