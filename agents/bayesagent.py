@@ -95,9 +95,11 @@ class BayesAgent(Agent):
             for i, d in enumerate(self.distributions[k]):
                 pde_vals.append(d.logpdf(observations[:,i].squeeze()))
             probs.append(np.log(prior) + np.sum(np.stack(pde_vals).T, axis=1))
-        probs = np.stack(probs).T
-        probs = np.abs(1/probs)
-        probs /= probs.sum(axis=1, keepdims=True)
+        probs_log = np.stack(probs).T.copy()
+        probs = np.exp(probs_log)#np.abs(1/probs)
+        is_zero = (probs==0).any(axis=1)
+        probs[is_zero, probs[is_zero,:].argmax(axis=1)] = 1
+        probs /= probs.sum(axis=1, keepdims=True) #probs.sum(axis=1, keepdims=True)
         return probs
     
     def fit(self, training_data, validation_data):
@@ -148,6 +150,7 @@ class BayesAgent(Agent):
         for key, c in classes.items(): #[is_stop_loss, is_take_profit, is_time_out]:
             dists = []
             for i, f in enumerate(columns):
+                f = f.lower()
                 if 'mom' in f or 'mean' in f or 'mean_diff' in f\
                      or 'kurt' in f: #or 'std' in v
                     p = stats.laplace_asymmetric.fit(observations[c,i])

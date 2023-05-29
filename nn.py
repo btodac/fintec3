@@ -14,28 +14,26 @@ from agents.targetgenerators import TrendBasedTargetGen
 from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
-save_model = True
-ticker = "^NDX"
+save_model = False
+ticker = "^GDAXI"
 # Observation parameters
 columns = [
-        'range', 'mom',
-        #'4min_high','8min_high','16min_high','32min_high','64min_high','128min_high','256min_high',
-        #'4min_low','8min_low','16min_low','32min_low','64min_low','128min_low','256min_low',
-        '2min_mom','4min_mom',#'8min_mom','32min_mom','64min_mom','128min_mom','256min_mom',
-        '8min_mean_dist','16min_mean_dist','32min_mean_dist','64min_mean_dist',
-        '128min_mean_dist','256min_mean_dist','512min_mean_dist',
-        '2min_trend','4min_trend','8min_trend','16min_trend','32min_trend','64min_trend',
-        '128min_trend','256min_trend','512min_trend',
-        '10min_std','15min_std','30min_std','60min_std','120min_std',#'240min_std','480min_std',
-        '10min_skew','15min_skew','30min_skew','60min_skew','120min_skew',#'240min_skew','480min_skew',
+        'Range', 'Mom',
+        '2min_Mom', '4min_Mom',
+        '8min_MeanDist','16min_MeanDist','32min_MeanDist','64min_MeanDist',
+        '128min_MeanDist','256min_MeanDist','512min_MeanDist',
+        '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
+        '128min_Trend','256min_Trend','512min_Trend',
+        '10min_Std','15min_Std','30min_Std','60min_Std','120min_Std',#'240min_Std','480min_Std',
+        '10min_Skew','15min_Skew','30min_Skew','60min_Skew','120min_Skew',#'240min_Skew','480min_Skew',
     ]
 '''
 columns = [
     '2min_mom','4min_mom',
-    '2min_trend','4min_trend','8min_trend','16min_trend','32min_trend','64min_trend',
-    '128min_trend','256min_trend','512min_trend',
-    '10min_std','30min_std',
-    '10min_skew','30min_skew',
+    '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
+    '128min_Trend','256min_Trend','512min_Trend',
+    '10min_Std','30min_Std',
+    '10min_Skew','30min_Skew',
     ]
 '''
 data_file = Market_Data_File_Handler(dataset_name="all")
@@ -49,7 +47,7 @@ training_data = training_data.tz_convert(tz)
 validation_data = validation_data.tz_convert(tz)
 #training_data = training_data.between_time("09:30", '11:30')
 #validation_data = validation_data.between_time("09:30", '11:30')
-params = {
+ndx_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
     'time_limit': 30,#5,
@@ -60,12 +58,23 @@ params = {
     'down' : -40,
     'to' : 30,
     }
+gdaxi_params = {
+    'take_profit': 40,#10
+    'stop_loss': 10, #10
+    'time_limit': 30,#5,
+    'live_tp': 40,
+    'live_sl': 5,
+    'live_tl': 30,#np.inf,
+    'up' : 30,
+    'down' : -30,
+    'to' : 30,
+    }
 target_generator = TrendBasedTargetGen(
-    up=params['up'], 
-    down=params['down'], 
-    time_limit=params['to']
+    up=gdaxi_params['up'], 
+    down=gdaxi_params['down'], 
+    time_limit=gdaxi_params['to']
     )
-model = NNAgent(ticker, columns,params=params)
+model = NNAgent(ticker, columns, params=gdaxi_params)
 #for i in range(10):
 history = model.fit(training_data, validation_data)
 

@@ -14,10 +14,10 @@ from agenttesting.results import Results
 from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
-save_model = True
-ticker = "^NDX"
-params = {
-    'take_profit': 50,#10
+save_model = False
+ticker = "^GDAXI"
+ndx_params = {
+    'take_profit': 40,#10
     'stop_loss': 10, #10
     'time_limit': 30,#5,
     'live_tp': 50,
@@ -27,18 +27,26 @@ params = {
     'down' : -40,
     'to' : 30,
     }
+gdaxi_params = {
+    'take_profit': 40,#10
+    'stop_loss': 10, #10
+    'time_limit': 30,#5,
+    'live_tp': 50,
+    'live_sl': 5,
+    'live_tl': 30,#np.inf,
+    'up' : 70,
+    'down' : -70,
+    'to' : 30,
+    }
 # Observation parameters
 columns = [
-    '2min_mom','4min_mom',#'8min_mom',#'32min_mom','64min_mom','128min_mom','256min_mom',
-    #'4min_mean_dist','8min_mean_dist',
-    #'16min_mean_dist','32min_mean_dist','64min_mean_dist',
-    #'128min_mean_dist','256min_mean_dist','512min_mean_dist',
-    '2min_trend','4min_trend','8min_trend','16min_trend','32min_trend','64min_trend',
-    '128min_trend','256min_trend','512min_trend',
-    #'5min_15min_mean_diff',
-    '30min_std',#'8min_std','16min_std','32min_std',#'min_std',#'15min_std',
-    '10min_skew',#'16min_skew','32min_skew',#'120min_skew','240min_skew',
-    #'20min_kurt', #'5min_kurt',
+    '2min_Mom','4min_Mom',
+    '8min_MeanDist','16min_MeanDist','32min_MeanDist','64min_MeanDist',
+    '128min_MeanDist','256min_MeanDist','512min_MeanDist',
+    '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
+    '128min_Trend','256min_Trend','512min_Trend',
+    '30min_Std',
+    '10min_Skew',
     ]
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
@@ -75,7 +83,7 @@ validation_data = validation_data.tz_convert(tz)
 #validation_data = validation_data.between_time("11:30", '16:00')
 
 
-model = BayesAgent(ticker, columns, params=params)
+model = BayesAgent(ticker, columns, params=gdaxi_params)
 target_generator = TrendBasedTargetGen(model._params['up'], 
                                        model._params['down'], 
                                        model._params['time_limit'])

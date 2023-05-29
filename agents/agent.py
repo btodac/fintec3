@@ -16,6 +16,9 @@ from utillities.timesanddates import get_ticker_time_zone, opening_and_closing_t
 
 log = logging.getLogger(__name__)
 
+# TODO: Convert sub classes to "model" class and use composition
+#   The observers should not return numpy arrays but dataframes with column names and datetime index
+
 PARAMS = {
     '^DJI': {
         # Position paramaters
