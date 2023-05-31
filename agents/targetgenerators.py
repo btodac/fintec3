@@ -9,6 +9,38 @@ import numpy as np
 import pandas as pd
 from agenttesting.results import OutcomeSimulator
 
+class VelocityBasedTargetGen(object):
+    
+    def __init__(self, up, down, time_limit):
+        if np.sign(up) != 1:
+            raise ValueError("Sign of argument up must be positive")
+        if np.sign(down) != -1:
+            raise ValueError("Sign of argument down must be negative")
+        self.up = up
+        self.down = down
+        self.time_limit = time_limit
+    
+    def get_targets(self, data, order_datetimes):
+        velocity = data['Close'] - data['Open']
+        order_index = data.index.get_indexer(order_datetimes)
+        indx_i = order_index[:,np.newaxis]
+        indx_r = np.arange(self.time_limit)[np.newaxis,:]
+        index = indx_i + indx_r
+        v = velocity.to_numpy()
+        v = v[index].squeeze()
+        
+        is_buy = np.logical_and(
+            np.mean(v, axis=1) >= self.up,
+            np.argmin(v.cumsum(axis=1), axis=1) == 0,
+            )
+        is_sell = np.logical_and( 
+            np.mean(v, axis=1) <= self.down,
+            np.argmax(v.cumsum(axis=1), axis=1) == 0,
+            )
+        is_hold = np.logical_not(np.logical_xor(is_buy, is_sell))
+        targets = np.stack((is_buy, is_sell, is_hold)).T
+        return targets
+
 class TrendBasedTargetGen(object):
     
     def __init__(self, up, down, time_limit):
@@ -64,7 +96,6 @@ class OrderBasedTargetGen(object):
         
     def get_targets(self, data, order_datetimes,):
         outcome_simulator = OutcomeSimulator()
-        outcome_simulator = OutcomeSimulator()
         orders = pd.DataFrame()
         orders.loc[:, 'Opening_Value'] = data.loc[order_datetimes, 'Close']
         orders.loc[:, 'Ticker'] = self.ticker
@@ -103,3 +134,25 @@ class OrderBasedTargetGen(object):
             is_hold = np.logical_not(np.logical_or(is_buy, is_sell))
         probs = np.stack((is_buy, is_sell, is_hold)).T
         return probs
+    
+class TargetGenerator(object):
+    def __init__(self, conditions: dict):
+        
+        self.conditions = {}
+        for condition, params in conditions.items():
+            self.conditions[condition] = self._parse_condition_name(condition, params)
+            
+    def get_targets(self, data, order_datetimes):
+        pass#is_
+            
+    def _parse_condition_name(self, condition, params):
+        try:
+            f = globals()[condition](params)
+        except KeyError:
+            raise KeyError(f'Unknown condition {condition}')    
+        return f
+
+class DeltaGT:
+    def get_condition(self, values, comparators):
+        return values[:,-1] > comparators.squeeze()
+        

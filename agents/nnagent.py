@@ -158,7 +158,7 @@ class NNAgent(Agent):
         callback = tf.keras.callbacks.EarlyStopping(
             monitor='val_cat_acc', mode="max",
             #monitor='val_loss', mode='min',
-            patience=20,
+            patience=5,
             restore_best_weights=True,
             )
         optimizer = keras.optimizers.Adam(

@@ -56,6 +56,7 @@ class OutcomeSimulator(object):
             pt[n] = to_percentage(orders[p])
 
         pt['N_Trades'] = len(orders)
+        pt['Win Ratio'] = sum(orders['Profit'] > 0) / sum(orders['Profit'] < 0)
         pt['Profit'] = orders['Profit'].sum()
         pt['Profit (day)'] = orders['Profit'].resample('1B',closed='right',label='right').sum().mean()
         pt['Profit (week)'] = orders['Profit'].resample('1W',closed='right',label='right').sum().mean()

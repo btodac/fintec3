@@ -8,7 +8,7 @@ Created on Fri Mar 17 21:31:29 2023
 import pandas as pd
 
 from agents.bayesagent import BayesAgent
-from agents.targetgenerators import TrendBasedTargetGen
+from agents.targetgenerators import TrendBasedTargetGen, VelocityBasedTargetGen
 from agenttesting.results import Results
 #from results.results import Results
 from utillities.datastore import Market_Data_File_Handler
@@ -19,24 +19,24 @@ ticker = "^GDAXI"
 ndx_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
-    'time_limit': 30,#5,
+    'time_limit': 5,#5,
+    'live_tp': 40,
+    'live_sl': 5,
+    'live_tl': 10,#np.inf,
+    'up' : 30,
+    'down' : -30,
+    'to' : 10,
+    }
+gdaxi_params = {
+    'take_profit': 40,#10
+    'stop_loss': 10, #10
+    'time_limit': 20,#5,
     'live_tp': 50,
     'live_sl': 5,
     'live_tl': 30,#np.inf,
     'up' : 40,
     'down' : -40,
-    'to' : 30,
-    }
-gdaxi_params = {
-    'take_profit': 40,#10
-    'stop_loss': 10, #10
-    'time_limit': 30,#5,
-    'live_tp': 50,
-    'live_sl': 5,
-    'live_tl': 30,#np.inf,
-    'up' : 70,
-    'down' : -70,
-    'to' : 30,
+    'to' : 20,
     }
 # Observation parameters
 columns = [
@@ -45,8 +45,21 @@ columns = [
     '128min_MeanDist','256min_MeanDist','512min_MeanDist',
     '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
     '128min_Trend','256min_Trend','512min_Trend',
-    '30min_Std',
-    '10min_Skew',
+    '10min_Std','30min_Std',
+    '10min_Skew','30min_Skew',
+    ]
+columns = [
+        '2min_Mom', '4min_Mom', '8min_Mom','16min_Mom','32min_Mom','64min_Mom',
+        '8min_MeanDist','16min_MeanDist',#'32min_MeanDist','64min_MeanDist',
+        #'128min_MeanDist','256min_MeanDist','512min_MeanDist',
+        '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
+        '128min_Trend','256min_Trend','512min_Trend',
+        #'10min_Std',#'15min_Std','30min_Std',#'60min_Std','120min_Std',#'240min_Std','480min_Std',
+        #'10min_Skew',#'15min_Skew','30min_Skew',#'60min_Skew','120min_Skew',#'240min_Skew','480min_Skew',
+        #'10min_Kurt','20min_Kurt','40min_Kurt',
+        '10min_20min_MeanDiff','20min_40min_MeanDiff',#'40min_80min_MeanDiff',
+        '10min_StochOsc',
+        #'10min_StochOsc',#'20min_StochOsc','40min_StochOsc',
     ]
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
@@ -87,6 +100,7 @@ model = BayesAgent(ticker, columns, params=gdaxi_params)
 target_generator = TrendBasedTargetGen(model._params['up'], 
                                        model._params['down'], 
                                        model._params['time_limit'])
+target_generator = VelocityBasedTargetGen(up=5, down=-5, time_limit=model._params['to'])
 model.target_generator = target_generator
 model.fit(training_data, validation_data)
 
@@ -97,8 +111,13 @@ results = Results(predictions, order_datetimes, ticker,
                     time_limit=model._params['live_tl'],
                     data=validation_data,
                     )
-
-print(results.positions_results.to_string(float_format=lambda x : f'{x:.3f}'))
+r = results.positions_results.loc[:,['N_Trades',
+                                     'Win Ratio',
+                                     'Profit',
+                                     'Profit (week)',
+                                     'Avg. Profit',
+                                     'Profit Factor']]
+print(r.to_string(float_format=lambda x : f'{x:.3f}'))
 results.plot_all_signals_profits()
 results.plot_position_profit()
 results.plot_position_distribution()

@@ -80,6 +80,8 @@ class MarketDataStore(object):
         if self.back_filled_data is not None:
             ### TODO: This data needs to combine partial data at the joining point!
             data = pd.concat((self.back_filled_data, data),axis=0)
+        
+        log.debug(f"Data shape = {data.shape}")
         return data
     
     def back_fill_data(self, t_req):
@@ -142,15 +144,18 @@ class MarketAgent(object):
         return t.time() >= self.opening_time.time() and t.time() < self.closing_time.time()
     
     def __del__(self):
+        pass
+        '''
         self.stop()
         self.market_data_store = None
         self.position_manager = None
         self.get_details_fcn = None
+        '''
     
     def start(self):
         # Back fill agent data
         t = pd.Timestamp.now(tz='UTC')
-        t_req = min(int(np.floor((t - self.opening_time).total_seconds()/60)), 128)
+        t_req = min(int(np.floor((t - self.opening_time).total_seconds()/60)), 512)
         self.market_data_store.back_fill_data(t_req)
         # Start the signal generation loop
         self._quit_event.clear()

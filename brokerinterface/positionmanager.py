@@ -52,15 +52,20 @@ class PositionManager(object):
         self.subscription.addlistener(self.position_watcher)
         self.sub_id = None
         self._stop_updating = Event()
+        log.debug('Starting Position Manager update thread')
         self.update_thread = Thread(target=self.update_loop, name="Position manager updater")
         self.update_thread.start()
     
     def __del__(self):
+        pass
+        '''
         self.stop()
         self.open_fcn = None
         self.close_fcn = None
+        '''
              
     def stop(self,):
+        log.debug('Stopping Position Manager update thread')
         self.clear()
         self._stop_updating.set()
         self.update_thread.join()
@@ -68,7 +73,7 @@ class PositionManager(object):
             + 'PosManTrades_' + pd.Timestamp.now(tz='UTC').strftime('%Y-%m-%d_%X')
             
         with open(filename,'w') as f:
-            print(pd.DataFrame(self.closed_positions).as_string(), file=f)
+            print(pd.DataFrame(self.closed_positions).to_string(), file=f)
         
     def update_loop(self):
         while not self._stop_updating.wait(1):

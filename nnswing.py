@@ -9,7 +9,8 @@ import numpy as np
 import pandas as pd
 
 from agents.targetgenerators import TrendBasedTargetGen
-from agents.nnagent import NNAgent
+#from agents.nnagent import NNAgent
+from agents.bayesagent import BayesAgent
 from agenttesting.results import SteeringResults
 from utillities.timesanddates import get_ticker_time_zone
 from utillities.datastore import Market_Data_File_Handler
@@ -18,16 +19,17 @@ save_model = False
 ticker = "^NDX"
 # Observation parameters
 columns = [
-        'range', 'mom',
-        '4min_high','8min_high','16min_high','32min_high','64min_high','128min_high','256min_high',
-        '4min_low','8min_low','16min_low','32min_low','64min_low','128min_low','256min_low',
-        '2min_mom','4min_mom',#'8min_mom','32min_mom','64min_mom','128min_mom','256min_mom',
-        '8min_mean_dist','16min_mean_dist','32min_mean_dist','64min_mean_dist',
-        '128min_mean_dist','256min_mean_dist','512min_mean_dist',
-        '2min_trend','4min_trend','8min_trend','16min_trend','32min_trend','64min_trend',
-        '128min_trend','256min_trend','512min_trend',
-        '10min_std','15min_std','30min_std','60min_std','120min_std',#'240min_std','480min_std',
-        '10min_skew','15min_skew','30min_skew','60min_skew','120min_skew',#'240min_skew','480min_skew',
+        '2min_Mom', '4min_Mom', '8min_Mom','16min_Mom','32min_Mom','64min_Mom',
+        '8min_MeanDist','16min_MeanDist',#'32min_MeanDist','64min_MeanDist',
+        #'128min_MeanDist','256min_MeanDist','512min_MeanDist',
+        '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
+        '128min_Trend','256min_Trend','512min_Trend',
+        #'10min_Std',#'15min_Std','30min_Std',#'60min_Std','120min_Std',#'240min_Std','480min_Std',
+        #'10min_Skew',#'15min_Skew','30min_Skew',#'60min_Skew','120min_Skew',#'240min_Skew','480min_Skew',
+        #'10min_Kurt','20min_Kurt','40min_Kurt',
+        '10min_20min_MeanDiff','20min_40min_MeanDiff',#'40min_80min_MeanDiff',
+        '10min_StochOsc',
+        #'10min_StochOsc',#'20min_StochOsc','40min_StochOsc',
     ]
 
 data_file = Market_Data_File_Handler(dataset_name="all")
@@ -48,16 +50,16 @@ params = {
     'live_tp': 40,
     'live_sl': 10,
     'live_tl': 30,#np.inf,
-    'up' : 40,
-    'down' : -40,
-    'to' : 30,
+    'up' : 6,
+    'down' : -6,
+    'to' : 5,
     }
 target_generator = TrendBasedTargetGen(
     up=params['up'], 
     down=params['down'], 
     time_limit=params['to']
     )
-model = NNAgent(
+model = BayesAgent(
     ticker, columns, params=params, target_generator=target_generator
     )
 #for i in range(10):

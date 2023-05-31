@@ -94,7 +94,10 @@ class BayesAgent(Agent):
             pde_vals = []
             for i, d in enumerate(self.distributions[k]):
                 pde_vals.append(d.logpdf(observations[:,i].squeeze()))
-            probs.append(np.log(prior) + np.sum(np.stack(pde_vals).T, axis=1))
+            pde_vals = np.stack(pde_vals).T
+            if len(pde_vals.shape) == 1:
+                pde_vals = pde_vals[np.newaxis,:]
+            probs.append(np.log(prior) + np.sum(pde_vals, axis=1))
         probs_log = np.stack(probs).T.copy()
         probs = np.exp(probs_log)#np.abs(1/probs)
         is_zero = (probs==0).any(axis=1)
@@ -151,11 +154,11 @@ class BayesAgent(Agent):
             dists = []
             for i, f in enumerate(columns):
                 f = f.lower()
-                if 'mom' in f or 'mean' in f or 'mean_diff' in f\
+                if 'mom' in f or 'mean' in f or 'meandiff' in f\
                      or 'kurt' in f: #or 'std' in v
                     p = stats.laplace_asymmetric.fit(observations[c,i])
                     dists.append(stats.laplace_asymmetric(*p))
-                elif 'std' in f or 'skew' in f or 'stoch_osc' in f\
+                elif 'std' in f or 'skew' in f or 'stochosc' in f\
                     or 'trend' in f:
                     p = stats.skewnorm.fit(observations[c,i])
                     dists.append(stats.skewnorm(*p))

@@ -91,7 +91,7 @@ class IGManager(object):
             self.stop_stream_service()
        
     def _monitor(self, data):
-        self.is_healthy = True
+        self._is_healthy = True
     
     def _restart_stream_service(self):
         if self.ig_stream_service is not None:
@@ -119,12 +119,14 @@ class IGManager(object):
                 else:
                     break
             
+            subscriptions = {}
             for sub_id_old in list(self._subscriptions.keys()):
-                subscription = self._subscriptions[sub_id_old]['subscription']
-                sub_id = ig_stream_service.ls_client.subscribe(subscription)
-                self._subscriptions[sub_id] = self._subscriptions.pop(sub_id_old)
-                self._subscriptions[sub_id]['listener'].sub_id = sub_id
-                
+                #subscription =  self._subscriptions.pop(sub_id_old)
+                subscription = self._subscriptions[sub_id_old]
+                sub_id = ig_stream_service.ls_client.subscribe(subscription['subscription'])
+                subscription['listener'].sub_id = sub_id
+                subscriptions[sub_id] = subscription             
+            self._subscriptions = subscriptions
             self.ig_stream_service = ig_stream_service
         
     def _caretaker_loop(self,):

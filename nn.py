@@ -27,15 +27,20 @@ columns = [
         '10min_Std','15min_Std','30min_Std','60min_Std','120min_Std',#'240min_Std','480min_Std',
         '10min_Skew','15min_Skew','30min_Skew','60min_Skew','120min_Skew',#'240min_Skew','480min_Skew',
     ]
-'''
+
 columns = [
-    '2min_mom','4min_mom',
-    '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
-    '128min_Trend','256min_Trend','512min_Trend',
-    '10min_Std','30min_Std',
-    '10min_Skew','30min_Skew',
+        '2min_Mom', '4min_Mom', '8min_Mom','16min_Mom','32min_Mom','64min_Mom',
+        '8min_MeanDist','16min_MeanDist','32min_MeanDist','64min_MeanDist',
+        '128min_MeanDist','256min_MeanDist','512min_MeanDist',
+        '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
+        '128min_Trend','256min_Trend','512min_Trend',
+        '10min_Std','15min_Std','30min_Std','60min_Std','120min_Std',#'240min_Std','480min_Std',
+        '10min_Skew','15min_Skew','30min_Skew','60min_Skew','120min_Skew',#'240min_Skew','480min_Skew',
+        '10min_Kurt','20min_Kurt','40min_Kurt',
+        '10min_20min_MeanDiff','20min_40min_MeanDiff','40min_80min_MeanDiff',
+        '10min_StochOsc','20min_StochOsc','40min_StochOsc',
     ]
-'''
+
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 split_time = pd.Timestamp("2023-03-01", tz='UTC')
@@ -69,13 +74,36 @@ gdaxi_params = {
     'down' : -30,
     'to' : 30,
     }
-target_generator = TrendBasedTargetGen(
-    up=gdaxi_params['up'], 
-    down=gdaxi_params['down'], 
-    time_limit=gdaxi_params['to']
-    )
+ndx_params = {
+    'take_profit': 40,#10
+    'stop_loss': 10, #10
+    'time_limit': 20,#5,
+    'live_tp': 30,
+    'live_sl': 5,
+    'live_tl': 15,#np.inf,
+    'up' : 20,
+    'down' : -20,
+    'to' : 10,
+    }
+gdaxi_params = {
+    'take_profit': 40,#10
+    'stop_loss': 10, #10
+    'time_limit': 20,#5,
+    'live_tp': 30,
+    'live_sl': 5,
+    'live_tl': 15,#np.inf,
+    'up' : 10,
+    'down' : -10,
+    'to' : 10,
+    }
+
 model = NNAgent(ticker, columns, params=gdaxi_params)
-#for i in range(10):
+'''
+target_generator = TrendBasedTargetGen(model._params['up'], 
+                                       model._params['down'], 
+                                       model._params['to'])
+model.target_generator = target_generator
+'''
 history = model.fit(training_data, validation_data)
 
 predictions, probabilities, order_datetimes = model.predict(validation_data)

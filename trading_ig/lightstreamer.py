@@ -70,6 +70,12 @@ class Subscription(object):
         self.snapshot = "true"
         self._listeners = []
     
+    def copy(self):
+        subscription_copy = Subscription(self.mode, self.items_names, 
+                                         self.field_names, adapter=self.adapter)
+        subscription_copy._listeners += self._listeners
+        return subscription_copy
+    
     def as_string(self):
         return self.mode + "/" + ",".join(self.items) + "/" + ",".join(self.fields)
         
@@ -259,6 +265,8 @@ class LSClient(object):
             self._stream_connection_thread.active_connection = False
             try:
                 self._stream_connection_thread.join(timeout=60.0)
+                if self._stream_connection_thread.is_alive():
+                    log.debug('Stream connection thread is still alive')
                 self._stream_connection_thread = None
                 log.debug("Thread terminated")
             except:
