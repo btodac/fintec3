@@ -40,17 +40,19 @@ class SessionManager(object):
         # Loops over agents and starts/stops them if in trading hours
         while not self._stop_session.wait(1):
             agents_active = False
+            # Start/Stop market agents
             for agent in self.agents:
                 if not agent.is_active and agent.is_in_trading_period:
                     self.ig_manager.start_service()                       
                     sub = agent.start()
                     self.ig_manager.add_subscription(sub, agent)  
                 elif agent.is_active and not agent.is_in_trading_period:
+                    agent.stop()
                     if agent.sub_id is not None:
-                        self.ig_manager.remove_subscription(agent.sub_id) 
+                        self.ig_manager.remove_subscription(agent.sub_id)
                         
                 agents_active = agents_active or agent.is_active
-            
+            # Start/Stop position manager
             if agents_active: 
                 if self.position_manager.sub_id is None:
                     self.ig_manager.add_subscription(self.position_manager.subscription,
@@ -59,7 +61,7 @@ class SessionManager(object):
                 if self.position_manager.sub_id is not None:
                     self.ig_manager.remove_subscription(self.position_manager.sub_id)
                     self.position_manager.sub_id = None
-                    
+                self.position_manager.stop()    
                 self.ig_manager.stop_stream_service()
                 self.ig_manager.stop_service()
         # Close all agents

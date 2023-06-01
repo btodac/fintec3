@@ -160,6 +160,7 @@ class MarketAgent(object):
         # Start the signal generation loop
         self._quit_event.clear()
         if not self.signal_generation_thread.is_alive():
+            log.info(f"Starting signal generator thread for {self.details['ticker']}")
             try:
                 self.signal_generation_thread.start()
             except RuntimeError:
@@ -171,9 +172,11 @@ class MarketAgent(object):
    
     def stop(self):
         # Clear positions
+        log.info(f"Stopping agent for {self.details['ticker']}")
         self.position_manager.clear(epic=self.details['epic'])
-        self._quit_event.set()
-        self.signal_generation_thread.join()
+        if self.is_active:
+            self._quit_event.set()
+            self.signal_generation_thread.join()
         self.market_data_store.save()
         
     def signal_generation_loop(self,):

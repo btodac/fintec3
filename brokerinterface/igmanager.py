@@ -26,8 +26,9 @@ class IGManager(object):
         self._stop_caretaker_thread = Event()
     
     def __del__(self,):
-        self.stop_stream_service()
-        self.stop_service()
+        pass
+        #self.stop_stream_service()
+        #self.stop_service()
            
     def start_service(self):
         if self.ig_service is None:
@@ -137,6 +138,7 @@ class IGManager(object):
                 log.info('Restarting stream!')
                 self._restart_stream_service() 
             self._is_healthy = False # This resets the flag, which is set to true every time data is recieved
+        log.info('Caretaker loop stopping')
         return None
     
     def open_fcn(self, *args, **kwargs):

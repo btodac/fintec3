@@ -41,7 +41,7 @@ class PositionManager(object):
         
         self._positions_lock = RLock()
         self.positions = {}
-        self.closed_positions = []
+        self.closed_positions = {}
         
         self._cooldown_end_time = pd.Timestamp.now('UTC')
         self._is_in_cooldown = False
@@ -50,9 +50,10 @@ class PositionManager(object):
                                          items=["TRADE:" + acc_number], 
                                          fields=["OPU"])
         self.subscription.addlistener(self.position_watcher)
+        
         self.sub_id = None
         self._stop_updating = Event()
-        log.debug('Starting Position Manager update thread')
+        log.info('Starting Position Manager update thread')
         self.update_thread = Thread(target=self.update_loop, name="Position manager updater")
         self.update_thread.start()
     
@@ -62,13 +63,14 @@ class PositionManager(object):
         self.stop()
         self.open_fcn = None
         self.close_fcn = None
-        '''
+        '''       
              
     def stop(self,):
-        log.debug('Stopping Position Manager update thread')
+        log.info('Stopping Position Manager update thread')
         self.clear()
-        self._stop_updating.set()
-        self.update_thread.join()
+        if self.update_thread.is_alive():
+            self._stop_updating.set()
+            self.update_thread.join()
         filename = '/home/mtolladay/Documents/finance/trades/' \
             + 'PosManTrades_' + pd.Timestamp.now(tz='UTC').strftime('%Y-%m-%d_%X')
             
@@ -77,11 +79,10 @@ class PositionManager(object):
         
     def update_loop(self):
         while not self._stop_updating.wait(1):
-            now_time = pd.Timestamp.now('UTC')
-            if now_time > self._cooldown_end_time:
-                self._is_in_cooldown = False
+            self._is_in_cooldown = pd.Timestamp.now('UTC') < self._cooldown_end_time
             
             with self._positions_lock:
+                now_time = pd.Timestamp.now('UTC')
                 for dealId in list(self.positions.keys()):
                     if now_time > self.positions[dealId]['endtime']:
                         self.close_position(dealId, outcome="timeout/external")
@@ -123,7 +124,7 @@ class PositionManager(object):
     def open_position(self, direction, details):
         if len(self.positions) >= self.n_max_positions:
             text = PINK + "Unable to open position max positions are active"
-        elif self._is_in_cooldown:
+        elif  pd.Timestamp.now('UTC') < self._cooldown_end_time:
             text = PINK + "Unable to open position, bot in cooldown"
         else:
             self._open_position(direction, details)
@@ -131,21 +132,21 @@ class PositionManager(object):
         log.info(text + WHITE)
         
     def close_position(self, dealId, outcome):
-        log.info(f'Attempting to close position {dealId} due to {outcome}')
+        log.debug(f'Attempting to close position {dealId} due to {outcome}')
         is_closed = True
         with self._positions_lock:
             if dealId in self.positions.keys():
                 if outcome.lower() in ["timeout/external","reverse posiiton","clearing"]:
                     is_closed = self._close_position(dealId)
                 elif outcome.lower() == "stop loss hit":
-                    self._is_in_cooldown = True
+                    #self._is_in_cooldown = True
                     self._cooldown_end_time = pd.Timestamp.now('UTC') \
                         + pd.Timedelta(minutes=self.positions[dealId]['cooldown'])
                 elif outcome.lower() == "take profit hit":
                     pass
     
                 if is_closed:
-                    self.closed_positions = self.positions.pop(dealId)
+                    self.closed_positions[dealId] = self.positions.pop(dealId)
                 else:
                     print(f'ERROR failed to close position {dealId}!')
             else:
@@ -198,7 +199,8 @@ class PositionManager(object):
                 pos_data.update(details._dict)
                 t_start = pd.Timestamp(pos_data['date']).tz_localize('UTC')
                 pos_data['endtime'] = t_start + pd.Timedelta(minutes=details['time_limit'])
-                self.positions[pos_data['dealId']] = pos_data
+                with self._positions_lock:
+                    self.positions[pos_data['dealId']] = pos_data
             break
         
         log.debug(pos_data)

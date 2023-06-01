@@ -15,17 +15,17 @@ from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
 save_model = False
-ticker = "^GDAXI"
+ticker = "^NDX"
 ndx_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
     'time_limit': 5,#5,
-    'live_tp': 40,
+    'live_tp': 60,
     'live_sl': 5,
-    'live_tl': 10,#np.inf,
+    'live_tl': 20,#np.inf,
     'up' : 30,
     'down' : -30,
-    'to' : 10,
+    'to' : 20,
     }
 gdaxi_params = {
     'take_profit': 40,#10
@@ -96,11 +96,11 @@ validation_data = validation_data.tz_convert(tz)
 #validation_data = validation_data.between_time("11:30", '16:00')
 
 
-model = BayesAgent(ticker, columns, params=gdaxi_params)
+model = BayesAgent(ticker, columns, params=ndx_params)
 target_generator = TrendBasedTargetGen(model._params['up'], 
                                        model._params['down'], 
                                        model._params['time_limit'])
-target_generator = VelocityBasedTargetGen(up=5, down=-5, time_limit=model._params['to'])
+target_generator = VelocityBasedTargetGen(up=7, down=-7, time_limit=model._params['to']) #Dax=5
 model.target_generator = target_generator
 model.fit(training_data, validation_data)
 

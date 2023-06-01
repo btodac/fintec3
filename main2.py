@@ -24,7 +24,7 @@ logname = "/home/mtolladay/Documents/finance/logs/debug_nb_" \
     +".log"
 logging.basicConfig(encoding='utf-8')
 l = logging.getLogger()
-l.setLevel(logging.DEBUG)
+l.setLevel(logging.INFO)
 l.handlers.clear()
 file_handler = logging.FileHandler(logname)
 file_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
