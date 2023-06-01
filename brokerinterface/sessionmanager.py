@@ -59,9 +59,10 @@ class SessionManager(object):
                                                      self.position_manager)
             else:
                 if self.position_manager.sub_id is not None:
+                    self.position_manager.stop()
                     self.ig_manager.remove_subscription(self.position_manager.sub_id)
                     self.position_manager.sub_id = None
-                self.position_manager.stop()    
+                    
                 self.ig_manager.stop_stream_service()
                 self.ig_manager.stop_service()
         # Close all agents
@@ -71,8 +72,8 @@ class SessionManager(object):
                 if agent.sub_id is not None:
                     self.ig_manager.remove_subscription(agent.sub_id)
                     
-        self.position_manager.stop()
         if self.position_manager.sub_id is not None:
+            self.position_manager.stop()
             self.ig_manager.remove_subscription(self.position_manager.sub_id)
             
         self.ig_manager.stop_stream_service()

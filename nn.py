@@ -10,7 +10,7 @@ import pandas as pd
 
 from agents.nnagent import NNAgent
 from agenttesting.results import Results
-from agents.targetgenerators import TrendBasedTargetGen
+from agents.targetgenerators import TrendBasedTargetGen, VelocityBasedTargetGen
 from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
@@ -24,8 +24,8 @@ columns = [
         '128min_MeanDist','256min_MeanDist','512min_MeanDist',
         '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
         '128min_Trend','256min_Trend','512min_Trend',
-        '10min_Std','15min_Std','30min_Std','60min_Std','120min_Std',#'240min_Std','480min_Std',
-        '10min_Skew','15min_Skew','30min_Skew','60min_Skew','120min_Skew',#'240min_Skew','480min_Skew',
+        '15min_Std','30min_Std','60min_Std','120min_Std',#'240min_Std','480min_Std',
+        '15min_Skew','30min_Skew','60min_Skew','120min_Skew',#'240min_Skew','480min_Skew',
     ]
 
 columns = [
@@ -89,21 +89,23 @@ gdaxi_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
     'time_limit': 20,#5,
-    'live_tp': 30,
+    'live_tp': 50,
     'live_sl': 5,
-    'live_tl': 15,#np.inf,
-    'up' : 10,
-    'down' : -10,
-    'to' : 10,
+    'live_tl': 30,#np.inf,
+    'up' : 20,
+    'down' : -20,
+    'to' : 30,
     }
 
 model = NNAgent(ticker, columns, params=gdaxi_params)
-'''
+
 target_generator = TrendBasedTargetGen(model._params['up'], 
                                        model._params['down'], 
                                        model._params['to'])
-model.target_generator = target_generator
 '''
+target_generator = VelocityBasedTargetGen(0.5, -0.5, 20)
+'''
+model.target_generator = target_generator
 history = model.fit(training_data, validation_data)
 
 predictions, probabilities, order_datetimes = model.predict(validation_data)

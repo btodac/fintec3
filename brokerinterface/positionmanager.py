@@ -71,6 +71,7 @@ class PositionManager(object):
         if self.update_thread.is_alive():
             self._stop_updating.set()
             self.update_thread.join()
+        
         filename = '/home/mtolladay/Documents/finance/trades/' \
             + 'PosManTrades_' + pd.Timestamp.now(tz='UTC').strftime('%Y-%m-%d_%X')
             

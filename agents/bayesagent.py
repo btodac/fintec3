@@ -72,13 +72,34 @@ PARAMS = {
     }
 
 class BayesAgent(Agent):
+    '''    
+    BayesAgent is a subclass of Agent the uses a naive Bayes
+    classifier to make predictions
+    '''
+        
     def __init__(self, ticker, columns, params=None, observer=None,
                  target_generator=None):
         '''
-        BayesAgent is a subclass of Agent the uses a naive Bayes
-        classifier to make predictions
+
+        Parameters
+        ----------
+        ticker : TYPE
+            DESCRIPTION.
+        columns : TYPE
+            DESCRIPTION.
+        params : TYPE, optional
+            DESCRIPTION. The default is None.
+        observer : TYPE, optional
+            DESCRIPTION. The default is None.
+        target_generator : TYPE, optional
+            DESCRIPTION. The default is None.
+
+        Returns
+        -------
+        None.
 
         '''
+
         if params is None:
             params = PARAMS[ticker]
         super().__init__(ticker, columns, params=params, observer=observer,
@@ -105,7 +126,23 @@ class BayesAgent(Agent):
         probs /= probs.sum(axis=1, keepdims=True) #probs.sum(axis=1, keepdims=True)
         return probs
     
-    def fit(self, training_data, validation_data):
+    def fit(self, training_data, validation_data) -> dict:
+        '''
+        Fits a Naive Bayes Classifier model to the training data
+
+        Parameters
+        ----------
+        training_data : pd.DataFrame
+            OHLC data to train model
+        validation_data : pd.DataFrame
+            OHLC data to test model (NOT USED)
+
+        Returns
+        -------
+        priors : dict
+            The prior probabilities of the three classes
+
+        '''
         observations, targets, _ = self.get_observations_and_targets(training_data)
         classes = {
             'Increasing' : targets[:,0].squeeze(),
@@ -125,46 +162,45 @@ class BayesAgent(Agent):
         return self.priors
     
     def _make_pdfs(self, observations, classes, columns):
-        # TEST
-        '''
-        c = np.stack(classes.values()).T
-        print(c.sum(axis=0))
-        indx_inc = np.nonzero(c[:,0])[0]
-        indx_dec = np.nonzero(c[:,1])[0]
-        indx_flat = np.nonzero(c[:,2])[0]
-        indx_1 = np.random.choice(indx_inc,size=5000,replace=False)
-        indx_2 = np.random.choice(indx_dec,size=5000,replace=False)
-        indx_3 = np.random.choice(indx_flat,size=8000,replace=False)
-        indx = np.concatenate((indx_1,indx_2,indx_3))
-        observations = observations[indx,:]
-        for k, t in classes.items():
-            classes[k] = t[indx]
-        self.priors = {
-            'Increasing' : classes['Increasing'].mean(),
-            'Decreasing' : classes['Decreasing'].mean(),   
-            'Flat' : classes['Flat'].mean()
-            }
-        print(self.priors) ### TODO
-        '''
-        # END OF TEST
         
         # Get pde kernals for the variables
         distributions = {}
         for key, c in classes.items(): #[is_stop_loss, is_take_profit, is_time_out]:
             dists = []
             for i, f in enumerate(columns):
-                f = f.lower()
-                if 'mom' in f or 'mean' in f or 'meandiff' in f\
-                     or 'kurt' in f: #or 'std' in v
-                    p = stats.laplace_asymmetric.fit(observations[c,i])
-                    dists.append(stats.laplace_asymmetric(*p))
-                elif 'std' in f or 'skew' in f or 'stochosc' in f\
-                    or 'trend' in f:
-                    p = stats.skewnorm.fit(observations[c,i])
-                    dists.append(stats.skewnorm(*p))
+                o = observations[c,i]
+                o = o[o!=0]
+                f = f.split('_')[-1].lower()
+                if f in ['kurt','mean','meandist','meandiff',
+                                 'mom','skew','trend',]:
+                    p = stats.nct.fit(o)
+                    d = stats.nct(*p)
+                elif f == 'high':
+                    p = stats.truncexpon.fit(o, f0=o.max())
+                    d = stats.truncexpon(*p)
+                elif f == 'low':
+                    o = -o
+                    p = stats.truncexpon.fit(o, f0=o.max())
+                    d = stats.truncexpon(*p)
+                elif f in ['range','std']:
+                    p = stats.invweibull.fit(o)
+                    d = stats.invweibull(*p)
+                elif f == 'stochosc':
+                    p = stats.laplace_asymmetric.fit(o)
+                    d = stats.laplace_asymmetric(*p)
                 else:
                     raise ValueError(f'Unkown feature: {f}')
-                
+                    '''
+                    if 'mom' in f or 'mean' in f or 'meandiff' in f\
+                         or 'kurt' in f: #or 'std' in v
+                        p = stats.laplace_asymmetric.fit(observations[c,i])
+                        dists.append(stats.laplace_asymmetric(*p))
+                    elif 'std' in f or 'skew' in f or 'stochosc' in f\
+                        or 'trend' in f:
+                        p = stats.skewnorm.fit(observations[c,i])
+                        dists.append(stats.skewnorm(*p))
+                    '''
+                dists.append(d)
             distributions[key] = dists
         
         return distributions 

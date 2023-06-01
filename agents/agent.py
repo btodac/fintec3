@@ -74,14 +74,16 @@ PARAMS = {
 
 
 class Agent(object):
+    '''
+    This is an abstract base class that provides a standard interface,
+    while allowing child classes to define fitting and predicting methods 
+    (fit() and make_prediction()). The standard interface is used by 
+    results generators or market agents to produce signals.
+    '''
+    
     def __init__(self, ticker: str, columns: list, params: dict=None, 
                  observer=None, target_generator=None):
         '''
-        This is an abstract base class that provides a standard interface,
-        while allowing child classes to define fitting and predicting methods 
-        (fit() and make_prediction()). The standard interface is used by 
-        results generators or market agents to produce signals.
-
         Parameters
         ----------
         ticker : str
@@ -165,8 +167,9 @@ class Agent(object):
                 
     def make_prediction(self, observation: np.array) -> np.array:
         '''
-        Virtual function to be provided by child class
-
+        Generates the softmax encoded probabilties of the three outcomes
+        (buy, sell and hold) based on the provided observation(s).
+        
         Parameters
         ----------
         observation : np.array
@@ -174,7 +177,7 @@ class Agent(object):
 
         Raises
         ------
-        NotImplementedError
+        NotImplementedError if a call to the base class method is made.
         
         Returns
         -------

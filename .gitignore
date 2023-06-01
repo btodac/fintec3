@@ -1,7 +1,7 @@
-./brokerinterface/__pycache__/*
-./agenttesting/__pycache__/*
-./trading_ig/__pycache__/*
-./agents/naivebayes/__pycache__/*
-./agents/__pycache__/*
-./__pycache__/*
-./utillities/__pycache__/*
+brokerinterface/__pycache__/*
+agenttesting/__pycache__/*
+trading_ig/__pycache__/*
+agents/naivebayes/__pycache__/*
+agents/__pycache__/*
+__pycache__/*
+utillities/__pycache__/*
