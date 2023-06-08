@@ -33,6 +33,10 @@ class IGinputError(ValueError):
         pass
     
 class PositionManager(object):
+    '''
+    Manages all positions for a session. Uses a LS connection to monitor 
+    and mirror changes to OTC positions. 
+    '''
     
     def __init__(self, acc_number, open_fcn, close_fcn, n_max_positions=1):
         self.open_fcn = open_fcn
@@ -76,7 +80,10 @@ class PositionManager(object):
             + 'PosManTrades_' + pd.Timestamp.now(tz='UTC').strftime('%Y-%m-%d_%X')
             
         with open(filename,'w') as f:
-            print(pd.DataFrame(self.closed_positions).to_string(), file=f)
+            if len(self.closed_positions) > 0:
+                df = pd.DataFrame(self.closed_positions).T
+                df = df.set_index('date')
+                print(df.to_string(), file=f)
         
     def update_loop(self):
         while not self._stop_updating.wait(1):
@@ -183,8 +190,8 @@ class PositionManager(object):
                     quote_id=None,
                     stop_level=None,
                     stop_distance=max(details['min_distance'], details['stop_loss']), 
-                    trailing_stop=str(details['trailing_stop']).lower(),#'false'/'true',
-                    trailing_stop_increment=details['trailing_stop_increment'],
+                    trailing_stop='false',#str(details['trailing_stop']).lower(),#'false'/'true',
+                    trailing_stop_increment=None,#details['trailing_stop_increment'],
                     )
             
                 #log.info(print(pos_data))

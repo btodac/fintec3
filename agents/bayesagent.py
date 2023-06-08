@@ -172,7 +172,11 @@ class BayesAgent(Agent):
                 o = o[o!=0]
                 f = f.split('_')[-1].lower()
                 if f in ['kurt','mean','meandist','meandiff',
-                                 'mom','skew','trend',]:
+                         'median','mom','skew','trend',]:
+                    #p = stats.laplace_asymmetric.fit(observations[c,i])
+                    #d = stats.laplace_asymmetric(*p)
+                    #p = stats.skewnorm.fit(observations[c,i])
+                    #d = stats.skewnorm(*p)
                     p = stats.nct.fit(o)
                     d = stats.nct(*p)
                 elif f == 'high':
@@ -182,7 +186,7 @@ class BayesAgent(Agent):
                     o = -o
                     p = stats.truncexpon.fit(o, f0=o.max())
                     d = stats.truncexpon(*p)
-                elif f in ['range','std']:
+                elif f in ['range','std','avgtruerange']:
                     p = stats.invweibull.fit(o)
                     d = stats.invweibull(*p)
                 elif f == 'stochosc':

@@ -85,6 +85,7 @@ ndx_params = {
     'down' : -20,
     'to' : 10,
     }
+'''
 gdaxi_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
@@ -94,18 +95,20 @@ gdaxi_params = {
     'live_tl': 30,#np.inf,
     'up' : 20,
     'down' : -20,
-    'to' : 30,
+    'to' : 20,
     }
-
+'''
 model = NNAgent(ticker, columns, params=gdaxi_params)
-
+'''
 target_generator = TrendBasedTargetGen(model._params['up'], 
                                        model._params['down'], 
                                        model._params['to'])
 '''
+'''
 target_generator = VelocityBasedTargetGen(0.5, -0.5, 20)
 '''
-model.target_generator = target_generator
+#model.target_generator = target_generator
+
 history = model.fit(training_data, validation_data)
 
 predictions, probabilities, order_datetimes = model.predict(validation_data)

@@ -47,10 +47,24 @@ class IGStreamService(object):
 
     def unsubscribe_all(self):
         # To avoid a RuntimeError: dictionary changed size during iteration
-        subscriptions = self.ls_client._subscriptions.copy()
-        for subcription_key in subscriptions:
+        subscription_keys = list(self.ls_client._subscriptions.keys())
+        for subcription_key in subscription_keys:
             self.ls_client.unsubscribe(subcription_key)
 
     def disconnect(self):
-        self.unsubscribe_all()
+        #self.unsubscribe_all()
         self.ls_client.disconnect()
+        
+    def restart(self):
+        self.ls_client.disconnect()
+        try:
+            self.ls_client.connect()
+        except:
+            subscriptions = self.ls_client._subscriptions.copy()
+            self.create_session()
+            for subscription in subscriptions.values():
+                self.ls_client.subscribe(subscription)
+                
+            
+                
+        

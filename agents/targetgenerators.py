@@ -43,7 +43,7 @@ class VelocityBasedTargetGen(object):
 
 class TrendBasedTargetGen(object):
     
-    def __init__(self, up, down, time_limit):
+    def __init__(self, up, down, time_limit, up_down_ratio=0.6):
         if np.sign(up) != 1:
             raise ValueError("Sign of argument up must be positive")
         if np.sign(down) != -1:
@@ -51,6 +51,7 @@ class TrendBasedTargetGen(object):
         self.up = up
         self.down = down
         self.time_limit = time_limit
+        self.up_down_ratio = up_down_ratio
     
     def get_targets(self, data, order_datetimes):
         prices = data['Close']
@@ -68,18 +69,18 @@ class TrendBasedTargetGen(object):
         tx = 10 * self.time_limit
         min_up_delta = (ups / tx)
         min_down_delta = (downs / tx)
-
+        
         is_buy = np.logical_and(
             # First check that the final value is gt the up value
             traces[:,-1] > ups.squeeze(),
             # Second check the change over time is generally greater than the min change
             #np.mean(deltas >= 0, axis=1) >= 0.60,
-            np.mean(deltas >= min_up_delta, axis=1) >= 0.60,
+            np.mean(deltas >= min_up_delta, axis=1) >= self.up_down_ratio, #0.50,
             )
         is_sell = np.logical_and( 
             traces[:,-1] < downs.squeeze(),
             #np.mean(deltas <= 0, axis=1) >= 0.60,
-            np.mean(deltas <= min_down_delta, axis=1) >= 0.60,
+            np.mean(deltas <= min_down_delta, axis=1) >= self.up_down_ratio,
             )#traces[:,-1] < down
         is_hold = np.logical_not(np.logical_xor(is_buy, is_sell))
         targets = np.stack((is_buy, is_sell, is_hold)).T

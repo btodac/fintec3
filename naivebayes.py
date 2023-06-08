@@ -20,33 +20,41 @@ ndx_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
     'time_limit': 5,#5,
-    'live_tp': 60,
+    'live_tp': 40,
     'live_sl': 5,
-    'live_tl': 20,#np.inf,
+    'live_tl': 10,#np.inf,
     'up' : 30,
     'down' : -30,
-    'to' : 20,
+    'to' : 10,
     }
 gdaxi_params = {
     'take_profit': 40,#10
-    'stop_loss': 10, #10
+    'stop_loss': 5, #10
     'time_limit': 20,#5,
-    'live_tp': 50,
+    'live_tp': 40,
     'live_sl': 5,
-    'live_tl': 30,#np.inf,
-    'up' : 40,
-    'down' : -40,
-    'to' : 20,
+    'live_tl': 10,#np.inf,
+    'up' : 30,
+    'down' : -30,
+    'to' : 10,
     }
+if ticker == "^NDX":
+    params = ndx_params
+elif ticker == "^GDAXI":
+    params = gdaxi_params
 # Observation parameters
+'''
 columns = [
-    '2min_Mom','4min_Mom',
-    '8min_MeanDist','16min_MeanDist','32min_MeanDist','64min_MeanDist',
+    #'Range',
+    #'16min_AvgTrueRange','32min_AvgTrueRange',
+    #'Median', '2min_Median','4min_Median','8min_Median','16min_Median',
+    #'Mom',
+    '2min_Mom','4min_Mom',#'8min_MeanDist','16min_MeanDist',#'32min_MeanDist','64min_MeanDist',
     #'128min_MeanDist','256min_MeanDist','512min_MeanDist',
     '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
     '128min_Trend','256min_Trend','512min_Trend',
-    '10min_Std','30min_Std',
-    '10min_Skew','30min_Skew',
+    #'10min_Std','30min_Std',
+    #'10min_Skew','30min_Skew',
     '10min_20min_MeanDiff','20min_40min_MeanDiff',#'40min_80min_MeanDiff',
     '10min_StochOsc',
     ]
@@ -64,7 +72,7 @@ columns = [
         '10min_StochOsc',
         #'10min_StochOsc',#'20min_StochOsc','40min_StochOsc',
     ]
-'''
+#'''
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 #'''
@@ -100,11 +108,12 @@ validation_data = validation_data.tz_convert(tz)
 #validation_data = validation_data.between_time("11:30", '16:00')
 
 
-model = BayesAgent(ticker, columns, params=gdaxi_params)
+model = BayesAgent(ticker, columns, params=params)
 target_generator = TrendBasedTargetGen(model._params['up'], 
                                        model._params['down'], 
-                                       model._params['time_limit'])
-target_generator = VelocityBasedTargetGen(up=5, down=-5, time_limit=model._params['to']) #Dax=5
+                                       model._params['to'],
+                                       up_down_ratio=0.5)
+#target_generator = VelocityBasedTargetGen(up=5, down=-5, time_limit=model._params['to']) #Dax=5
 model.target_generator = target_generator
 model.fit(training_data, validation_data)
 

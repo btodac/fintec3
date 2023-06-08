@@ -16,22 +16,39 @@ import pandas as pd
 from brokerinterface import IGManager, PositionManager, MarketAgent, SessionManager
 from utillities.user_data import Account
 ####################################################################################################
-account_type = 'demo'
+account_type = 'live'
 tickers = ['^GDAXI','^NDX']
 ####################################################################################################
+log_path = "/home/mtolladay/Documents/finance/logs/"
+log_suffix = str(pd.Timestamp.now()).replace(' ','_').replace(':','-').split('.')[0] \
+    +".log"
 logname = "/home/mtolladay/Documents/finance/logs/debug_nb_" \
     + str(pd.Timestamp.now()).replace(' ','_').replace(':','-').split('.')[0] \
     +".log"
 logging.basicConfig(encoding='utf-8')
 l = logging.getLogger()
-l.setLevel(logging.INFO)
+l.setLevel(logging.DEBUG)
 l.handlers.clear()
-file_handler = logging.FileHandler(logname)
-file_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+# Handler for broker interface file log
+filename = log_path + "broker_interface_" + log_suffix
+broker_interface_handler = logging.FileHandler(log_path + "brokerinterface_" + log_suffix)
+#broker_interface_handler.addFilter(logging.Filter("brokerinterface"))
+broker_interface_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+broker_interface_handler.setLevel(logging.INFO)
+# Handler for trading_ig
+filename = log_path + "trading_ig_" + log_suffix
+ig_handler = logging.FileHandler(log_path + "trading_ig_" + log_suffix)
+ig_handler.addFilter(logging.Filter("trading_ig"))
+ig_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+ig_handler.setLevel(logging.DEBUG)
+# Handler for stream log
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
-l.addHandler(file_handler)
+stream_handler.setLevel(logging.INFO)
+# Add handlers
+l.addHandler(broker_interface_handler)
 l.addHandler(stream_handler)
+l.addHandler(ig_handler)
 
 account = Account(account_name=account_type)
 
@@ -41,18 +58,21 @@ position_manager = PositionManager(account.acc_number, ig_manager.open_fcn, ig_m
 agents = []
 for ticker in tickers:
     if ticker == "^GDAXI":
-        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_GDAXI_U0ROMZ/model.pkl'
+        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_GDAXI_2H3ZC4/model.pkl'
     elif ticker == '^NDX':
-        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_NDX_01WN9F/model.pkl'
+        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_NDX_RLDTC0/model.pkl'
         
     with open(filename,'rb') as f:
         model = pickle.load(f)
 
+    model._params['stop_loss'] = 5
+    #model._params['time_limit'] = 20
     agent = MarketAgent(model, position_manager, account_type, ig_manager.backfill_fcn,
                   ig_manager.get_details_fcn,
                   size={'live' : 0.5, 'demo' : 1.0}[account_type], cooldown=0, frequency=60)
     agents.append(agent)
 
+print(agent.details._dict)
 session_manager = SessionManager(agents, position_manager, ig_manager)
 logging.info("Session starting...")
 

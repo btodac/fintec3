@@ -6,6 +6,7 @@ Created on Wed May  3 12:14:09 2023
 @author: mtolladay
 """
 from collections import deque
+import time
 import pickle
 from threading import Thread, Event
 import logging
@@ -116,9 +117,9 @@ class MarketAgent(object):
         self.details = MarketDetails(
             {'epic' : MarketAgent.available_epics[account_type.upper()][model._params['ticker']], 
              'ticker' : model._params['ticker'],
-             'stop_loss' : model._params['stop_loss'],
-             'take_profit' : model._params['take_profit'],
-             'time_limit' : model._params['time_limit'],
+             'stop_loss' : model._params['live_sl'],
+             'take_profit' : model._params['live_tp'],
+             'time_limit' : model._params['live_tl'],
              'cooldown' : cooldown,
              'size' : size,
              'trailing_stop': True,
@@ -180,15 +181,17 @@ class MarketAgent(object):
         self.market_data_store.save()
         
     def signal_generation_loop(self,):
-        while not self._quit_event.wait(self.frequency):
-            log.debug("Generating signal...")
-            action = self.model(self.market_data_store.get_data())
-            if action != "HOLD":
-                try:
-                    self.position_manager.open_position(action, self.details)
-                except IGinputError:
-                    self.details.update_details()
-                    self.position_manager.open_position(action, self.details)
+        while not self._quit_event.wait(1): #self.frequency): ### TODO: Pandas resamples 60s at whole minute intervals
             t = pd.Timestamp.now('UTC')
-            log.info(f"{str(t).split('.')[0]} {self.details['ticker']}: {action}")
+            if t.second >= 58:
+                log.debug("Generating signal...")
+                action = self.model(self.market_data_store.get_data())
+                if action != "HOLD":
+                    try:
+                        self.position_manager.open_position(action, self.details)
+                    except IGinputError:
+                        self.details.update_details()
+                        self.position_manager.open_position(action, self.details)
+                log.info(f"{str(t).split('.')[0]} {self.details['ticker']}: {action}")
+                time.sleep(5) # Wait long enough to ensure only one call is made per minute
                     

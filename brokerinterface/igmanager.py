@@ -9,6 +9,7 @@ import time
 import traceback
 from threading import Thread, Event
 import logging
+import requests.exceptions.ConnectionError
 
 from trading_ig import IGService, IGStreamService
 
@@ -41,8 +42,14 @@ class IGManager(object):
     
     def stop_service(self):
         if self.ig_service is not None:
-            self.ig_service.logout()
-            self.ig_service = None
+            try:
+                self.ig_service.logout()
+            except requests.exceptions.ConnectionError:
+                pass
+            except:
+                print(traceback.print_exc())
+            finally:
+                self.ig_service = None
             
     def start_stream_service(self):
         self.start_service()
@@ -58,10 +65,10 @@ class IGManager(object):
                 if self.caretaker_thread.is_alive():
                     self.caretaker_thread.join()
                     del self.caretaker_thread
-            try:
-                self.ig_stream_service.unsubscribe_all()
-            except:
-                print(traceback.print_exc())
+            #try:
+            #    self.ig_stream_service.unsubscribe_all()
+            #except:
+            #    print(traceback.print_exc())
             try:
                 self.ig_stream_service.disconnect()
             except:
@@ -96,14 +103,17 @@ class IGManager(object):
     
     def _restart_stream_service(self):
         if self.ig_stream_service is not None:
-            try:
-                self.ig_stream_service.unsubscribe_all()
-            except:
-                print(traceback.print_exc())
+            #try:
+            #    self.ig_stream_service.unsubscribe_all()
+            #except:
+            #    print(traceback.print_exc())
+                
             try:
                 self.ig_stream_service.disconnect()
             except:
                 print(traceback.print_exc())
+            finally:
+                self.ig_stream_service = None
             
             if self.ig_service is None:
                 self.start_service()

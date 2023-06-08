@@ -264,7 +264,7 @@ class LSClient(object):
             log.debug("Waiting for thread to terminate")
             self._stream_connection_thread.active_connection = False
             try:
-                self._stream_connection_thread.join(timeout=60.0)
+                self._stream_connection_thread.join(timeout=60.0) ### TODO Reduced this!
                 if self._stream_connection_thread.is_alive():
                     log.debug('Stream connection thread is still alive')
                 self._stream_connection_thread = None
@@ -285,7 +285,7 @@ class LSClient(object):
         if self._stream_connection is not None:
             # Exits stream thread loop, joins and exits stream thread, closes connection
             self._join()
-            log.debug("Connection closed")
+            log.info("Lightstreamer connection closed")
             print("DISCONNECTED FROM LIGHTSTREAMER")
         else:
             log.warning("No connection to Lightstreamer")

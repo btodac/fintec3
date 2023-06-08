@@ -22,8 +22,8 @@ import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn'
 
 from agents import Agent
-from agenttesting.results import Results, OutcomeSimulator
-from utillities.timesanddates import get_ticker_time_zone, opening_and_closing_times
+#from agenttesting.results import Results, OutcomeSimulator
+#from utillities.timesanddates import get_ticker_time_zone, opening_and_closing_times
 
 log = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ class NNAgent(Agent):
         super().__init__(ticker, columns, params=params, observer=observer,
                          target_generator=target_generator)
         
-        self.max_norm = 4
+        self.max_norm = 3
         self.dropout = 0.2
         self._model = self._create_model(input_data_size=len(columns),
                                          output_data_size=3)
@@ -148,26 +148,26 @@ class NNAgent(Agent):
         class_weight = class_weight.max() / class_weight
         print(f'Normalised weights: {class_weight}')
         if any(class_weight>4):
-            print('The class weights are large enough to cause significant over fitting')
-        #class_weight[:2] = 0.75 * class_weight[:2]
+            print('The class weights are large enough to cause over fitting')
+        #class_weight[:2] = 0.5 * class_weight[:2]
         class_weight = dict(zip(np.arange(len(class_weight)), class_weight))
     
         x_valid, y_valid, _ = self.get_observations_and_targets(validation_data)
     
         metrics = [tf.keras.metrics.CategoricalAccuracy(name="cat_acc"),]
         callback = tf.keras.callbacks.EarlyStopping(
-            monitor='val_cat_acc', mode="max",
-            #monitor='val_loss', mode='min',
-            patience=5,
+            #monitor='val_cat_acc', mode="max",
+            monitor='val_loss', mode='min',
+            patience=10,
             restore_best_weights=True,
             )
         optimizer = keras.optimizers.Adam(
             learning_rate=0.0001,
-            clipnorm=0.5
+            clipnorm=0.3
             )
         loss_fn = tf.keras.losses.CategoricalCrossentropy(
             from_logits=False,
-            label_smoothing=0.02,
+            label_smoothing=0.05,
             axis=-1,
             reduction="auto", name="crossentropy",
             )
@@ -180,6 +180,6 @@ class NNAgent(Agent):
             validation_data=(x_valid, y_valid),
             class_weight=class_weight,
             verbose=2,  # 2,
-            epochs=100, batch_size=32, shuffle=True,
+            epochs=500, batch_size=64, shuffle=True,
             callbacks=[callback],
             )
