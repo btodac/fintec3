@@ -407,7 +407,8 @@ class LSClient(object):
                 # Skipping Preamble message, keep on receiving messages.
                 log.debug("Preamble")
             else:
-                self._forward_update_message(message)
+                if self._stream_connection_thread.active_connection:
+                    self._forward_update_message(message)
         # TESTING
         
         if rebind:

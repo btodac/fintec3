@@ -40,7 +40,7 @@ columns = [
         '10min_StochOsc',
         #'10min_StochOsc',#'20min_StochOsc','40min_StochOsc',
     ]
-'''
+#'''
 columns = [
         '2min_Mom', '4min_Mom', '8min_Mom','16min_Mom','32min_Mom','64min_Mom',
         '8min_MeanDist','16min_MeanDist','32min_MeanDist','64min_MeanDist',
@@ -53,7 +53,7 @@ columns = [
         '10min_20min_MeanDiff','20min_40min_MeanDiff','40min_80min_MeanDiff',
         '10min_StochOsc','20min_StochOsc','40min_StochOsc',
     ]
-'''
+#'''
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 split_time = pd.Timestamp("2023-03-01", tz='UTC')
@@ -63,8 +63,7 @@ validation_data = all_data.iloc[all_data.index.to_numpy() >= split_time]
 tz = get_ticker_time_zone(ticker) #'^GDAXI'
 training_data = training_data.tz_convert(tz)
 validation_data = validation_data.tz_convert(tz)
-#training_data = training_data.between_time("09:30", '11:30')
-#validation_data = validation_data.between_time("09:30", '11:30')
+training_data = training_data.between_time("09:30", '17:30')
 ndx_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
@@ -98,30 +97,30 @@ ndx_params = {
     'down' : -20,
     'to' : 10,
     }
-'''
+
 gdaxi_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
-    'time_limit': 20,#5,
+    'time_limit': 5,#5,
     'live_tp': 50,
     'live_sl': 5,
-    'live_tl': 30,#np.inf,
+    'live_tl': 10,#np.inf,
     'up' : 20,
     'down' : -20,
-    'to' : 20,
+    'to' : 10,
     }
-'''
-model = NNAgent(ticker, columns, params=gdaxi_params)
-'''
+if ticker == "^GDAXI":
+    params = gdaxi_params
+elif ticker == "^NDX":
+    params = ndx_params
+
+model = NNAgent(ticker, columns, params=params)
 target_generator = TrendBasedTargetGen(model._params['up'], 
                                        model._params['down'], 
-                                       model._params['to'])
-'''
-'''
-target_generator = VelocityBasedTargetGen(0.5, -0.5, 20)
-'''
-#model.target_generator = target_generator
+                                       model._params['to'],
+                                       up_down_ratio=0.5)
 
+model.target_generator = target_generator
 history = model.fit(training_data, validation_data)
 
 predictions, probabilities, order_datetimes = model.predict(validation_data)

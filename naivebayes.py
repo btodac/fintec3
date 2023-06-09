@@ -30,7 +30,7 @@ ndx_params = {
 gdaxi_params = {
     'take_profit': 40,#10
     'stop_loss': 5, #10
-    'time_limit': 20,#5,
+    'time_limit': 5,#5,
     'live_tp': 30,
     'live_sl': 5,
     'live_tl': 10,#np.inf,
@@ -102,7 +102,7 @@ training_data = training_data.tz_convert(tz)
 validation_data = validation_data.tz_convert(tz)
 #training_data = training_data.asfreq('5S')
 #validation_data = validation_data.asfreq('5S')
-training_data = training_data.between_time("10:30", '16:00')
+training_data = training_data.between_time("10:00", '17:30')
 #validation_data = validation_data.between_time("09:30", '11:30')
 #training_data = training_data.between_time("11:30", '16:00')
 #validation_data = validation_data.between_time("11:30", '16:00')
@@ -112,7 +112,7 @@ model = BayesAgent(ticker, columns, params=params)
 target_generator = TrendBasedTargetGen(model._params['up'], 
                                        model._params['down'], 
                                        model._params['to'],
-                                       up_down_ratio=0.55)
+                                       up_down_ratio=0.75)
 #target_generator = VelocityBasedTargetGen(up=5, down=-5, time_limit=model._params['to']) #Dax=5
 model.target_generator = target_generator
 model.fit(training_data, validation_data)
