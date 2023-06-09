@@ -124,7 +124,7 @@ class PositionManager(object):
                     reason = 'timeout/external'
                     color = YELLOW
                     
-                self.close_position(dealId, reason)
+                self.close_position(dealId, reason, data=opu)
                 log.info(color + f'Deal {dealId} closed due to {reason} price = {level}' + WHITE)
             elif status == "UPDATED":
                 log.info(CYAN + f'Deal {dealId} {status} current = {level}' + WHITE)
@@ -139,7 +139,7 @@ class PositionManager(object):
             text = GREEN + "Position opened"
         log.info(text + WHITE)
         
-    def close_position(self, dealId, outcome):
+    def close_position(self, dealId, outcome, data=None):
         log.debug(f'Attempting to close position {dealId} due to {outcome}')
         is_closed = True
         with self._positions_lock:
@@ -154,7 +154,10 @@ class PositionManager(object):
                     pass
     
                 if is_closed:
-                    self.closed_positions[dealId] = self.positions.pop(dealId)
+                    deal = self.positions.pop(dealId)
+                    if data is not None:
+                        deal.update(data)
+                    self.closed_positions[dealId] = deal
                 else:
                     print(f'ERROR failed to close position {dealId}!')
             else:

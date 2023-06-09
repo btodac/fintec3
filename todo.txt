@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jun  8 22:35:31 2023
+
+@author: mtolladay
+
+TODO LIST
+
+1) Improve data export from position manager to get usefule information about sa position, currently
+    only opening data is stored
+2) implement the super trend indicator
+3) GUI!
+4) Stop distance as a function af average true range
+5) Allow different active trading times from market opening hours
+6) Multiple models based on long/short term trends
+
+"""

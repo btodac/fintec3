@@ -58,9 +58,9 @@ position_manager = PositionManager(account.acc_number, ig_manager.open_fcn, ig_m
 agents = []
 for ticker in tickers:
     if ticker == "^GDAXI":
-        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_GDAXI_2H3ZC4/model.pkl'
+        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_GDAXI_HD1KR5/model.pkl'
     elif ticker == '^NDX':
-        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_NDX_RLDTC0/model.pkl'
+        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_NDX_RLDTC0/model.pkl' #NB_NDX_ABDRVK
         
     with open(filename,'rb') as f:
         model = pickle.load(f)
@@ -70,9 +70,9 @@ for ticker in tickers:
     agent = MarketAgent(model, position_manager, account_type, ig_manager.backfill_fcn,
                   ig_manager.get_details_fcn,
                   size={'live' : 0.5, 'demo' : 1.0}[account_type], cooldown=0, frequency=60)
+    print(agent.details._dict)
     agents.append(agent)
 
-print(agent.details._dict)
 session_manager = SessionManager(agents, position_manager, ig_manager)
 logging.info("Session starting...")
 

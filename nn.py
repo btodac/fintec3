@@ -27,7 +27,20 @@ columns = [
         '15min_Std','30min_Std','60min_Std','120min_Std',#'240min_Std','480min_Std',
         '15min_Skew','30min_Skew','60min_Skew','120min_Skew',#'240min_Skew','480min_Skew',
     ]
-
+columns = [
+        '2min_Mom', '4min_Mom', '8min_Mom','16min_Mom','32min_Mom','64min_Mom',
+        '8min_MeanDist','16min_MeanDist',#'32min_MeanDist','64min_MeanDist',
+        #'128min_MeanDist','256min_MeanDist','512min_MeanDist',
+        '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
+        '128min_Trend','256min_Trend','512min_Trend',
+        #'10min_Std',#'15min_Std','30min_Std',#'60min_Std','120min_Std',#'240min_Std','480min_Std',
+        #'10min_Skew',#'15min_Skew','30min_Skew',#'60min_Skew','120min_Skew',#'240min_Skew','480min_Skew',
+        #'10min_Kurt','20min_Kurt','40min_Kurt',
+        '10min_20min_MeanDiff','20min_40min_MeanDiff',#'40min_80min_MeanDiff',
+        '10min_StochOsc',
+        #'10min_StochOsc',#'20min_StochOsc','40min_StochOsc',
+    ]
+'''
 columns = [
         '2min_Mom', '4min_Mom', '8min_Mom','16min_Mom','32min_Mom','64min_Mom',
         '8min_MeanDist','16min_MeanDist','32min_MeanDist','64min_MeanDist',
@@ -40,7 +53,7 @@ columns = [
         '10min_20min_MeanDiff','20min_40min_MeanDiff','40min_80min_MeanDiff',
         '10min_StochOsc','20min_StochOsc','40min_StochOsc',
     ]
-
+'''
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 split_time = pd.Timestamp("2023-03-01", tz='UTC')

@@ -9,7 +9,7 @@ import time
 import traceback
 from threading import Thread, Event
 import logging
-import requests.exceptions.ConnectionError
+from requests.exceptions import ConnectionError
 
 from trading_ig import IGService, IGStreamService
 
@@ -44,7 +44,7 @@ class IGManager(object):
         if self.ig_service is not None:
             try:
                 self.ig_service.logout()
-            except requests.exceptions.ConnectionError:
+            except ConnectionError:
                 pass
             except:
                 print(traceback.print_exc())
