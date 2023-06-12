@@ -129,8 +129,7 @@ class Agent(object):
         self._set_tradeable_time(ticker)
         
         if observer is None:
-            self.observer = ObservationBuilder(columns, self._opening_time, 
-                                               self._closing_time, self._params['tz'])
+            self.observer = ObservationBuilder(columns,)
         else:
             self.observer = observer
         if target_generator is None:
@@ -203,7 +202,8 @@ class Agent(object):
             Either "BUY","SELL" or "HOLD"
 
         '''
-        observations, _ = self.observer.make_observations(data)
+        observations, _ = self.observer.make_observations(data, self._opening_time, 
+                                           self._closing_time, self._params['tz'])
         observation = observations[-1, :]
         pred = np.argmax(self.make_prediction(observation))
         return {0: 'BUY', 1: 'SELL', 2: 'HOLD'}[pred]
@@ -232,7 +232,9 @@ class Agent(object):
         '''
         if data.index.tz != self._params['tz']:
             data.index = data.index.tz_convert(self._params['tz'])
-        observations, order_datetimes = self.observer.make_observations(data)
+        observations, order_datetimes = self.observer.make_observations(
+            data, self._opening_time, self._closing_time, self._params['tz']
+            )
         prob = self.make_prediction(observations)
         pred = np.argmax(prob, axis=1)
         return pred, prob, order_datetimes
@@ -260,7 +262,9 @@ class Agent(object):
         '''
         if data.index.tz != self._params['tz']:
             data.index = data.index.tz_convert(self._params['tz'])
-        observations, order_datetimes = self.observer.make_observations(data)
+        observations, order_datetimes = self.observer.make_observations(
+            data,self._opening_time, self._closing_time, self._params['tz']
+           )
         targets = self.target_generator.get_targets(data, order_datetimes)
         return observations, targets, order_datetimes
     

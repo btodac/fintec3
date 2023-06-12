@@ -154,6 +154,7 @@ class OutcomeSimulator(object):
         
         orders = orders_o.copy(deep=True)
     
+        # Get outcomes
         orders = self.limit_times(orders, df)
         
         is_take_profit, is_stop_loss, is_timeout = self.outcome_bool(orders)
@@ -166,10 +167,12 @@ class OutcomeSimulator(object):
         orders['Take_Profit_Hit'] = is_take_profit
         orders['Stop_Loss_Hit'] = is_stop_loss
         
+        # Get closing times
         orders.loc[to_indx,'Closing_Datetime'] = orders.loc[to_indx,'Timeout_Time']
         orders.loc[tp_indx,'Closing_Datetime'] = orders.loc[tp_indx,'Take_Profit_Time']
         orders.loc[sl_indx,'Closing_Datetime'] = orders.loc[sl_indx,'Stop_Loss_Time']
         
+        # Enforce closing at end of day
         closing_time = orders.loc[to_indx,'Timeout_Time']
         #print(df.index[-1])
         ct = []
@@ -177,9 +180,16 @@ class OutcomeSimulator(object):
             i_max = df.index[df.index.date == i.date()][-1]
             if i > i_max:
                 i = i_max
+                #print('Ooops')
             ct.append(i)
         
+        #c = closing_time.to_numpy()
+        #t_max = np.array([df.index[df.index.date == t][-1] for t in closing_time.date()])
+        #f = np.min(np.stack((c, t_max)), axis=0)
+        
         closing_time = pd.DatetimeIndex(ct)
+        
+        # Set closing values
         to_closing = df.loc[closing_time,'Close'].to_numpy()
         
         buysell = np.zeros(len(orders))
@@ -188,13 +198,13 @@ class OutcomeSimulator(object):
         tp_closing = orders.loc[tp_indx,'Opening_Value'] + buysell[is_take_profit] * orders.loc[tp_indx,'Take_Profit']
         sl_closing = orders.loc[sl_indx,'Opening_Value'] - buysell[is_stop_loss] * orders.loc[sl_indx,'Stop_Loss']
         
-       
         orders.loc[to_indx,'Closing_Value'] = to_closing
         orders.loc[tp_indx,'Closing_Value'] = tp_closing
         orders.loc[sl_indx,'Closing_Value'] = sl_closing
 
-        s = [OutcomeSimulator.spreads[ticker] for ticker in orders['Ticker']]
-        m = [OutcomeSimulator.multipliers[ticker] for ticker in orders['Ticker']]
+        # Calculate profit/loss
+        s = np.array([OutcomeSimulator.spreads[ticker] for ticker in orders['Ticker']])
+        m = np.array([OutcomeSimulator.multipliers[ticker] for ticker in orders['Ticker']])
         orders['Profit'] = m * (buysell * (orders['Closing_Value'] - orders['Opening_Value']) \
                             - s)
 

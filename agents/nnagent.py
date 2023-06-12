@@ -117,8 +117,10 @@ class NNAgent(Agent):
         
         self.max_norm = 3
         self.dropout = 0.2
-        self._model = self._create_model(input_data_size=len(columns),
-                                         output_data_size=3)
+        self._model = self._create_model(
+            input_data_size=self.observer.shape,
+            output_data_size=3
+            )
     
     def _create_model(self, input_data_size, output_data_size):
         model = keras.Sequential()
@@ -134,7 +136,7 @@ class NNAgent(Agent):
         return model
     
     def make_prediction(self, observations):
-        if len(observations.shape) == 2:
+        if len(observations.shape) >= 2:
             y = self._model.predict(observations)
         else:
             observation = tf.convert_to_tensor(observations.squeeze())
@@ -159,7 +161,7 @@ class NNAgent(Agent):
             #monitor='val_cat_acc', mode="max",
             monitor='val_loss', mode='min',
             patience=10,
-            restore_best_weights=True,
+            restore_best_weights=False,#True,
             )
         optimizer = keras.optimizers.Adam(
             learning_rate=0.0001,
@@ -180,6 +182,6 @@ class NNAgent(Agent):
             validation_data=(x_valid, y_valid),
             class_weight=class_weight,
             verbose=2,  # 2,
-            epochs=500, batch_size=64, shuffle=True,
+            epochs=500, batch_size=32, shuffle=True,
             callbacks=[callback],
             )

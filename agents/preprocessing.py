@@ -10,27 +10,44 @@ import pandas as pd
 
 class ObservationBuilder(object):
     
-    def __init__(self, columns, opening_time, closing_time, tz):
+    def __init__(self, columns, back_features=None):
         self.columns = columns
         self._feature_generators = {}
         for c in columns:
             self._feature_generators[c] = self._parse_feature_name(c)
-        self._opening_time = opening_time
-        self._closing_time = closing_time
-        self.tz = tz
+        self.back_features = back_features
     
-    def make_observations(self, data,):
+    @property
+    def shape(self):
+        return (len(self.columns), self.back_features[0])
+    
+    def make_observations(self, data, opening_time, closing_time, tz):
         data = data.copy()
-        if data.index.tz != self.tz:
-            data.index = data.index.tz_convert(self.tz)
-        data = data.between_time(self._opening_time.time(),
-                                 self._closing_time.time())
+        if data.index.tz != tz:
+            data.index = data.index.tz_convert(tz)
+        data = data.between_time(opening_time.time(), closing_time.time())
+        features = self._calculate_features(data)
+        if self.back_features is not None:
+            f = []
+            for i in range(self.back_features[0]):
+                dti = features.index - pd.Timedelta(minutes=self.back_features[1])
+                is_nat = dti.time < features.index.time.min()
+                dtmin = features.index.floor(str(self.back_features[1]) + 'min')
+                dti = dti.to_numpy()
+                dti[is_nat] = dtmin[is_nat]
+                dti = pd.DatetimeIndex(dti)
+                f.append(features.loc[dti,:].to_numpy())
+            observations = np.stack(f, axis=2)
+        else:
+            observations = features.to_numpy()
+        observations[np.isnan(observations)] = 0
+        return observations, data.index
+    
+    def _calculate_features(self, data):
         features = []
         for column, feature_gen in self._feature_generators.items():
             features.append(feature_gen(data))
-        observations = pd.concat(features, axis=1).to_numpy()
-        observations[np.isnan(observations)] = 0
-        return observations, data.index
+        return pd.concat(features, axis=1)
         
     def _parse_feature_name(self, column):
         c = column.split('_')
