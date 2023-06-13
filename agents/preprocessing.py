@@ -32,11 +32,12 @@ class ObservationBuilder(object):
         if self.back_features is not None:
             f = []
             for i in range(self.back_features[0]):
-                dti = features.index - pd.Timedelta(minutes=self.back_features[1])
+                t = i * self.back_features[1]
+                dti = features.index - pd.Timedelta(minutes=t)
                 is_nat = dti.time < features.index.time.min()
-                dtmin = features.index.floor(str(self.back_features[1]) + 'min')
-                dti = dti.to_numpy()
-                dti[is_nat] = dtmin[is_nat]
+                dti = dti.to_series()
+                dti.iloc[is_nat] = pd.NaT
+                dti = dti.bfill()
                 dti = pd.DatetimeIndex(dti)
                 f.append(features.loc[dti,:].to_numpy())
             observations = np.stack(f, axis=2)
@@ -61,5 +62,5 @@ class ObservationBuilder(object):
         except NameError:
             raise NameError(f'Unknown feature {feature}')    
         else:
-            f = cls(t_strings)
-        return f
+            return cls(t_strings)
+        

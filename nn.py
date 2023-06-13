@@ -59,6 +59,15 @@ columns = [
     '8min_StochOsc','16min_StochOsc','32min_StochOsc',
     ]
 #'''
+'''
+columns = [
+    'AvgTrueRange','2min_AvgTrueRange','4min_AvgTrueRange','8min_AvgTrueRange',
+    '16min_AvgTrueRange','32min_AvgTrueRange',
+    '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend',
+    '64min_Trend','128min_Trend','256min_Trend',
+    '10min_StochOsc','20min_StochOsc','40min_StochOsc',
+    ]
+'''
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 split_time = pd.Timestamp("2023-03-01", tz='UTC')
@@ -68,7 +77,10 @@ validation_data = all_data.iloc[all_data.index.to_numpy() >= split_time]
 tz = get_ticker_time_zone(ticker) #'^GDAXI'
 training_data = training_data.tz_convert(tz)
 validation_data = validation_data.tz_convert(tz)
-training_data = training_data.between_time("09:30", '17:30')
+training_data = training_data.between_time(
+    #"10:00", "16:00" # NDX
+    "09:30", '17:30' # GDAXI
+    )
 ndx_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
@@ -106,20 +118,20 @@ ndx_params = {
 gdaxi_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
-    'time_limit': 10,#5,
+    'time_limit': 30,#5,
     'live_tp': 40,
     'live_sl': 5,
     'live_tl': 10,#np.inf,
-    'up' : 13,
-    'down' : -13,
-    'to' : 10,
+    'up' : 15,
+    'down' : -15,
+    'to' : 15,
     }
 if ticker == "^GDAXI":
     params = gdaxi_params
 elif ticker == "^NDX":
     params = ndx_params
 
-observer = ObservationBuilder(columns, back_features=(10,1))
+observer = ObservationBuilder(columns, back_features=(6,5))
 target_generator = TrendBasedTargetGen(params['up'], 
                                        params['down'], 
                                        params['to'],

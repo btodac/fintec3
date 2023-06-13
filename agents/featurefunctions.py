@@ -139,8 +139,7 @@ class STrend(Feature):
         #up = up - data['Close']
         #down = down - data['Close']
         return up, down
-        
-        
+               
 class Trend(Feature):
     def __call__(self, data):
         trend = data['Close'] - data['Open']

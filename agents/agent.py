@@ -278,3 +278,10 @@ class Agent(object):
             closing_time -= pd.Timedelta(minutes=1)
         self._opening_time = opening_time
         self._closing_time = closing_time
+        
+    def __reduce__(self):
+        args_kwargs = (self._params['ticker'], self._params['columns'],
+                       self._params, self.observer, self.target_generator)
+        
+        return type(self), args_kwargs, self.model,
+        
