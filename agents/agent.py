@@ -144,7 +144,7 @@ class Agent(object):
     def fit(self, training_data: pd.DataFrame, 
             validation_data: pd.DataFrame):
         '''
-        Virtual function to be provided by child class
+        Trains the agents model using provided data
 
         Parameters
         ----------
@@ -153,40 +153,15 @@ class Agent(object):
         validation_data : pd.DataFrame
             Data used to test the model
 
-        Raises
-        ------
-        NotImplementedError
-
         Returns
         -------
         None.
 
         '''
-        raise NotImplementedError()
-                
-    def make_prediction(self, observation: np.array) -> np.array:
-        '''
-        Generates the softmax encoded probabilties of the three outcomes
-        (buy, sell and hold) based on the provided observation(s).
-        
-        Parameters
-        ----------
-        observation : np.array
-            The features used to make the prediction
-
-        Raises
-        ------
-        NotImplementedError if a call to the base class method is made.
-        
-        Returns
-        -------
-        np.array:
-            An Nx3 numpy array with each row the predicted probabilty of 
-            the three classes (buy, sell and hold)
-
-        '''
-        raise NotImplementedError()  
-    
+        train_observations, train_targets, _ = self.get_observations_and_targets(training_data)
+        val_observations, val_targets, _ = self.get_observations_and_targets(validation_data)
+        self.model.fit(train_observations, train_targets, (val_observations, val_targets))
+                   
     def __call__(self, data: pd.DataFrame) -> str:
         '''
         Used to generate a single class prediction
@@ -205,7 +180,7 @@ class Agent(object):
         observations, _ = self.observer.make_observations(data, self._opening_time, 
                                            self._closing_time, self._params['tz'])
         observation = observations[-1, :]
-        pred = np.argmax(self.make_prediction(observation))
+        pred = np.argmax(self.model.make_prediction(observation))
         return {0: 'BUY', 1: 'SELL', 2: 'HOLD'}[pred]
 
     def predict(self, data: pd.DataFrame,):
@@ -235,7 +210,7 @@ class Agent(object):
         observations, order_datetimes = self.observer.make_observations(
             data, self._opening_time, self._closing_time, self._params['tz']
             )
-        prob = self.make_prediction(observations)
+        prob = self.model.make_prediction(observations)
         pred = np.argmax(prob, axis=1)
         return pred, prob, order_datetimes
     

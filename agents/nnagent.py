@@ -117,22 +117,42 @@ class NNAgent(Agent):
         
         self.max_norm = 3
         self.dropout = 0.2
-        self._model = self._create_model(
-            input_data_size=self.observer.shape,
-            output_data_size=3
+        self.n_layers = 5
+        self.n_units = 128
+        self.batch_size = 32
+        self.epochs = 500
+        self.metrics = [tf.keras.metrics.CategoricalAccuracy(name="cat_acc"),]
+        self.optimizer = keras.optimizers.Adam(
+            learning_rate=0.0001,
+            clipnorm=0.3
+            )
+        self.loss_fn = tf.keras.losses.CategoricalCrossentropy(
+            from_logits=False,
+            label_smoothing=0.05,
+            axis=-1,
+            reduction="auto", name="crossentropy",
+            )
+        self.callback = tf.keras.callbacks.EarlyStopping(
+            #monitor='val_cat_acc', mode="max",
+            monitor='val_loss', mode='min',
+            patience=10,
+            restore_best_weights=False,#True,
             )
     
     def _create_model(self, input_data_size, output_data_size):
         model = keras.Sequential()
         model.add(layers.Input(shape=input_data_size))
         model.add(layers.Flatten())
-        for i in range(5):
+        for i in range(self.n_layers):
             model.add(layers.Dense(
-                128, activation='relu',
+                self.n_units, activation='relu',
                 kernel_constraint=keras.constraints.MaxNorm(self.max_norm),
             ))
             model.add(layers.Dropout(self.dropout))
         model.add(layers.Dense(output_data_size, activation='softmax'))
+        model.compile(optimizer=self.optimizer, 
+                      loss=self.loss_fn, 
+                      weighted_metrics=self.metrics)
         return model
     
     def make_prediction(self, observations):
@@ -144,44 +164,23 @@ class NNAgent(Agent):
             y = self._model(observation)
         return y
     
-    def fit(self, training_data, validation_data):
-        x_train, y_train, _ = self.get_observations_and_targets(training_data)
-        class_weight = y_train.mean(axis=0)
+    def fit(self, observations, targets, validation_data):
+        class_weight = targets.mean(axis=0)
         class_weight = class_weight.max() / class_weight
         print(f'Normalised weights: {class_weight}')
         if any(class_weight>4):
             print('The class weights are large enough to cause over fitting')
-        #class_weight[:2] = 0.5 * class_weight[:2]
         class_weight = dict(zip(np.arange(len(class_weight)), class_weight))
-    
-        x_valid, y_valid, _ = self.get_observations_and_targets(validation_data)
-    
-        metrics = [tf.keras.metrics.CategoricalAccuracy(name="cat_acc"),]
-        callback = tf.keras.callbacks.EarlyStopping(
-            #monitor='val_cat_acc', mode="max",
-            monitor='val_loss', mode='min',
-            patience=10,
-            restore_best_weights=False,#True,
+        self._model = self._create_model(
+            input_data_size=self.observer.shape,
+            output_data_size=3
             )
-        optimizer = keras.optimizers.Adam(
-            learning_rate=0.0001,
-            clipnorm=0.3
-            )
-        loss_fn = tf.keras.losses.CategoricalCrossentropy(
-            from_logits=False,
-            label_smoothing=0.05,
-            axis=-1,
-            reduction="auto", name="crossentropy",
-            )
-    
-        self._model.compile(optimizer=optimizer, loss=loss_fn, weighted_metrics=metrics)
-        #print(self._model.summary())
     
         return self._model.fit(
-            x_train, y_train,
-            validation_data=(x_valid, y_valid),
+            observations, targets,
+            validation_data=validation_data,
             class_weight=class_weight,
             verbose=2,  # 2,
-            epochs=500, batch_size=32, shuffle=True,
-            callbacks=[callback],
+            epochs=self.epochs, batch_size=self.batch_size, shuffle=True,
+            callbacks=[self.callback],
             )
