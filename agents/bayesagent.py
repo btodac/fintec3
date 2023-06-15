@@ -95,30 +95,32 @@ class BayesAgent(object):
 
 
         '''
-       # observations, targets, _ = self.get_observations_and_targets(training_data)
-        classes = {
-            'Increasing' : targets[:,0].squeeze(),
-            'Decreasing' : targets[:,1].squeeze(),
-            'Flat' : targets[:,2].squeeze(),
-            }
-        self.priors = {
-            'Increasing' : targets[:,0].mean(),
-            'Decreasing' : targets[:,1].mean(),   
-            'Flat' : targets[:,2].mean()
-            }
-        print(self.priors) 
-
-        distributions = {}
-        for target_class, is_target in classes.items():
-            class_dists = []
-            for i, column in enumerate(self._columns):
-                o = observations[is_target,i]
-                o = o[o!=0]
-                p = self.dist_functions[column].fit(o)
-                class_dists.append(self.dist_functions(*p))
-            distributions[target_class] = class_dists
-        
-        self.distributions = distributions
+        if not self._is_fit:
+            classes = {
+                'Increasing' : targets[:,0].squeeze(),
+                'Decreasing' : targets[:,1].squeeze(),
+                'Flat' : targets[:,2].squeeze(),
+                }
+            self.priors = {
+                'Increasing' : targets[:,0].mean(),
+                'Decreasing' : targets[:,1].mean(),   
+                'Flat' : targets[:,2].mean()
+                }
+            print(self.priors) 
+    
+            distributions = {}
+            for target_class, is_target in classes.items():
+                class_dists = []
+                for i, column in enumerate(self._columns):
+                    o = observations[is_target,i]
+                    o = o[o!=0]
+                    p = self.dist_functions[column].fit(o)
+                    class_dists.append(self.dist_functions(*p))
+                distributions[target_class] = class_dists
+            
+            self.distributions = distributions
+            
+            self._is_fit = True
 
     def __reduce__(self):
         if self._is_fit:

@@ -21,71 +21,10 @@ from tensorflow.keras import layers
 import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn'
 
-from agents import Agent
-#from agenttesting.results import Results, OutcomeSimulator
-#from utillities.timesanddates import get_ticker_time_zone, opening_and_closing_times
-
 log = logging.getLogger(__name__)
 
-PARAMS = {
-    '^DJI': {
-        # Position paramaters
-        'take_profit': 75,
-        'stop_loss': 20,
-        'time_limit': 30,
-        # Training params
-        'up': 20,  # 20,
-        'down': -20,  # 20,
-        'to': 15,
-    },
-    "^NDX": {
-        'take_profit': 30,#100
-        'stop_loss': 3,
-        'time_limit': 10,#15,
-        'live_tp': 30,
-        'live_sl': 10,
-        'live_tl': 10,
-        'to' : 10,
-    },
-    '^GDAXI': {
-        'take_profit': 25,
-        'stop_loss': 5,
-        'time_limit': 15,
-        'live_tp': 25,
-        'live_sl': 5,
-        'live_tl': 10,
-        'to' : 10,
-    },
-    '^FCHI': {
-        'take_profit': 17,
-        'stop_loss': 4,
-        'time_limit': 30,
-        'up': 5,
-        'down': -5,
-        'to': 15,
-    },
-    '^FTSE': {
-        'take_profit': 15,
-        'stop_loss': 3,
-        'time_limit': 30,
-        'up': 10,
-        'down': -10,
-        'to': 30,
-    },
-    'EUR=X': {
-        'take_profit': 30 * 1e-8,
-        'stop_loss': 5 * 1e-8,
-        'time_limit': 30,
-        'up': 0.0005,
-        'down': -0.0005,
-        'to': 20,
-    }
-}
-
-
-class NNAgent(Agent):
-    def __init__(self, ticker: str, columns: list, params=None, 
-                 observer=None, target_generator=None):
+class NNAgent(object):
+    def __init__(self,):
         '''
         NNAgent is a subclass of Agent that uses a multi layer 
         perceptron model to make predictions
@@ -108,12 +47,6 @@ class NNAgent(Agent):
         None.
 
         '''
-        
-        if params is None:
-            params = PARAMS[ticker]
-        
-        super().__init__(ticker, columns, params=params, observer=observer,
-                         target_generator=target_generator)
         
         self.max_norm = 3
         self.dropout = 0.2
@@ -138,6 +71,8 @@ class NNAgent(Agent):
             patience=10,
             restore_best_weights=False,#True,
             )
+        
+        self._is_fit = False
     
     def _create_model(self, input_data_size, output_data_size):
         model = keras.Sequential()
@@ -165,22 +100,24 @@ class NNAgent(Agent):
         return y
     
     def fit(self, observations, targets, validation_data):
-        class_weight = targets.mean(axis=0)
-        class_weight = class_weight.max() / class_weight
-        print(f'Normalised weights: {class_weight}')
-        if any(class_weight>4):
-            print('The class weights are large enough to cause over fitting')
-        class_weight = dict(zip(np.arange(len(class_weight)), class_weight))
-        self._model = self._create_model(
-            input_data_size=self.observer.shape,
-            output_data_size=3
-            )
-    
-        return self._model.fit(
-            observations, targets,
-            validation_data=validation_data,
-            class_weight=class_weight,
-            verbose=2,  # 2,
-            epochs=self.epochs, batch_size=self.batch_size, shuffle=True,
-            callbacks=[self.callback],
-            )
+        if not self._is_fit:
+            class_weight = targets.mean(axis=0)
+            class_weight = class_weight.max() / class_weight
+            print(f'Normalised weights: {class_weight}')
+            if any(class_weight>4):
+                print('The class weights are large enough to cause over fitting')
+            class_weight = dict(zip(np.arange(len(class_weight)), class_weight))
+            self._model = self._create_model(
+                input_data_size=observations.shape[1:],
+                output_data_size=targets.shape[-1]
+                )
+        
+            self._is_fit = True # Bit hacky to change this before it is fit
+            return self._model.fit(
+                observations, targets,
+                validation_data=validation_data,
+                class_weight=class_weight,
+                verbose=2,  # 2,
+                epochs=self.epochs, batch_size=self.batch_size, shuffle=True,
+                callbacks=[self.callback],
+                )

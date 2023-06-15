@@ -36,9 +36,10 @@ class Kurt(Feature):
         return feature
     
 class Low(Feature):
+    #TODO: This will clash with the distribution function! That requires abs(distance)
     def __call__(self, data):
-        h = data['Low'].rolling(self.t_strings[0]).min()
-        feature = h - data['Close']
+        l = data['Low'].rolling(self.t_strings[0]).min()
+        feature = data['Close'] - l #h - data['Close']
         return feature
     
 class Mean(Feature):

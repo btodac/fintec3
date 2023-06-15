@@ -81,7 +81,7 @@ class Agent(object):
     results generators or market agents to produce signals.
     '''
     
-    def __init__(self, ticker: str, columns: list, params: dict=None, 
+    def __init__(self, ticker: str, columns: list, model, params: dict=None, 
                  observer=None, target_generator=None):
         '''
         Parameters
@@ -256,7 +256,8 @@ class Agent(object):
         
     def __reduce__(self):
         args_kwargs = (self._params['ticker'], self._params['columns'],
-                       self._params, self.observer, self.target_generator)
+                       self.model, self._params, self.observer, 
+                       self.target_generator)
         
-        return type(self), args_kwargs, self.model,
+        return type(self), args_kwargs
         
