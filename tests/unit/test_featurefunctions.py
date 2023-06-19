@@ -23,6 +23,7 @@ class TestAvgTrueRange(unittest.TestCase):
     
     def setUp(self,):
         self.data = test_data
+        self.atr = featurefunctions.AvgTrueRange()
     
     def test_avgtruerange(self,):
         pass

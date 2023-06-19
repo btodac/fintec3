@@ -93,3 +93,14 @@ def holidays(ticker):
         holidays = []
         
     return pd.DatetimeIndex(holidays, tz='UTC')
+
+def convert_offset_to_seconds(offset):
+    if type(offset) == str:
+        offset = pd.tseries.frequencies.to_offset(offset)
+    t = pd.Timestamp.now()
+    try:
+        s = (t + offset - t).total_seconds()
+    except TypeError:
+        raise TypeError(f'Offset was of type {type(offset)}. Must be either offset string or offset')
+    else:
+        return s
