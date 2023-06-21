@@ -6,13 +6,9 @@ Created on Mon Feb 20 21:07:30 2023
 @author: mtolladay
 """
 import sys
-#import os
-#import pickle
 import string
 import random
-#import gc
 import logging
-#import traceback
 '''
 import numpy as np
 import matplotlib
@@ -22,8 +18,6 @@ if not hasattr(__builtins__,'__IPYTHON__'):
 '''
 sys.path.insert(1, '/home/mtolladay/jobfiles/PyProjects/fintec3')
 
-#from traderbot.observer import Observer
-#from traderbot.environment import Env
 from agents.preprocessing import ObservationBuilder
 from agents.reinforcednn.rlagent import RLAgent
 from agents.reinforcednn.trainer import TrainingParams, Trainer
@@ -34,9 +28,7 @@ from agents.reinforcednn.environment import Env
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
 
-#save_file = '/home/mtolladay/Documents/finance/traderbot_test11'
-
-restart = True
+restart = False
 
 if restart:
     with open('finish.txt', 'r') as fh:
@@ -52,9 +44,9 @@ columns = [
     '2min_Mom','4min_Mom',
     '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
     '128min_Trend','256min_Trend','512min_Trend',
-    '10min_Std',
+    '10min_Std','30min_Std',
     '10min_20min_MeanDiff','20min_40min_MeanDiff',
-    '10min_StochOsc',
+    '10min_StochOsc','20min_StochOsc',
     ]
 
 if not restart:    

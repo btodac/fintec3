@@ -15,13 +15,14 @@ class MarketDataGen(object):
     def __init__(self, observer):
         self.observer = observer
         
-        self._data_len = pd.Timedelta(weeks=4)
+        start_date = pd.Timestamp("2022-01-01")
+        self._data_len = pd.Timedelta(weeks=1)
         self._data_gen = GBMDataGen(
-            start_date=pd.Timestamp("2022-01-01"), 
-            end_date=pd.Timestamp("2022-01-01") + self._data_len, 
-            freq='1min', 
-            start_time=pd.Timestamp("09:00"),
-            end_time=pd.Timestamp("17:30"),
+            start_date = start_date, 
+            end_date = start_date + self._data_len, 
+            freq = '1min', 
+            start_time = pd.Timestamp("09:00"),
+            end_time = pd.Timestamp("17:30"),
             )
         
         self._make_new_data()
@@ -46,11 +47,11 @@ class MarketDataGen(object):
     def _make_new_data(self,):
         self._data_gen.drift = np.random.normal(scale=3) * 1e-9
         self._data_gen.volatility = np.random.gamma(5,1) * 1e-5
-
         try:
             self._data_gen.initial_value = self.data['Close'].iloc[-1]
         except AttributeError:
             self._data_gen.initial_value = 13000
+            
         self.data = self._data_gen.generate()
         self.observations, _  = self.observer.make_observations(
             self.data,

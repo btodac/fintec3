@@ -52,6 +52,7 @@ class Broker(object):
     @property
     def current_equity(self,):
         return self.funds + self.current_profit_loss
+    
     def reset(self,):
         self.positions = []
         self.funds = 0.0

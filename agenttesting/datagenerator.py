@@ -41,7 +41,7 @@ class GBMDataGen(object):
         if type(self.drift) == np.array and type(self.volatility) == np.array:
             pass
         else:
-            data = self._generate_motion(
+            data = self._stochastic_volatility_motion(#self._generate_motion(
                 n_points, self.initial_value, 
                 self.drift, self.volatility, tick_seconds
                 )
@@ -56,6 +56,40 @@ class GBMDataGen(object):
             volatility * np.random.normal(0, np.sqrt(dt), size=(n_points))
         )
         
+        return initial_value * motion.cumprod()
+    
+    def _stochastic_volatility_motion(
+            self, n_points, initial_value, drift, volatility0, dt):
+        mean = np.array([0,0])
+        std1 = dt
+        std2 = dt
+        # rho in [-0.01,0.01] otherwise the multivariate normal
+        # creates a drift!
+        rho = 0.0 # 0.0 was used by Heston but this can be fit to market data
+        cov = np.array([
+            [std1 , rho * np.sqrt(std1 * std2)],
+            [rho * np.sqrt(std1 * std2), std2]
+            ])
+        
+        gmb = np.random.multivariate_normal(mean, cov, size=(n_points))
+        # NB: 2 * kappa * theta > chi ** 2 must be enforced for v to remain +ve
+        kappa = 0.001 # rate for return to mean
+        theta = volatility0 # long term average volatility
+        chi = 1e-5 # volatility of the volatility
+        assert (2 * kappa * theta) > (chi ** 2), \
+            "Feller condition fail: 2 * kappa * theta <= chi ** 2! "\
+            "Volatility may become negative"
+        v = volatility0 # the volatility
+        volatility = theta * np.ones(n_points)
+        for i in range(n_points):
+            dv = (kappa * (theta - v) * dt + chi * np.sqrt(v) * gmb[i,1])
+            v += dv
+            volatility[i] = v
+        
+        motion = np.exp(
+            (drift - volatility**2 / 2) * dt +
+            volatility * gmb[:,0].squeeze()
+        )
         return initial_value * motion.cumprod()
     
     def conv_to_ohlc(self, data, freq):

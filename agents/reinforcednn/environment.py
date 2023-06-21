@@ -29,18 +29,20 @@ class Env(object):
         score = 0
 
         if action != self._last_action:
-            if self._last_action != 2:
+            if self._last_action != 2: # Must be an open order to close
                 self.broker.close_position()
-            if action != 2:
+            if action != 2: # open the new order
                 self.broker.open_position(action)
+                score = self.broker.current_equity
+            
         elif action == 2:
             score = -DO_NOTHING_PUNISHMENT
                 
-        if self.broker.funds > 50:
-            score = 500
+        if self.broker.funds > 100:
+            #score = 500
             done = True
-        elif self.broker.funds < -50:
-            score = -500
+        elif self.broker.funds < -100:
+            #score = -500
             done = True
         else:
             #score = min(score,0)

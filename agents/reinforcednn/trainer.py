@@ -45,9 +45,9 @@ class TrainingParams(object):
         # Train the model after 4 actions
         self.update_after_actions = 8
         # How often to update the target network
-        self.update_target_network = 5e3 # 100 * self.update_after_actions
+        self.update_target_network = 5e4 # 100 * self.update_after_actions
         # Save every n frames
-        self.n_frames_save = 1e4
+        self.n_frames_save = 5e4
         
     def decay_epsilon(self):
         self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
