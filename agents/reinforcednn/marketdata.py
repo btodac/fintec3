@@ -32,13 +32,21 @@ class MarketDataGen(object):
         return self
     
     def __next__(self):
-        self._counter +=1
         done = self._counter >= len(self.data)
         if done:
             self._make_new_data()
             self._counter = 0
             
-        return self.observations[self._counter,:], done
+        observation = self.observations[self._counter,:] 
+        self._counter +=1
+        return observation, done
+    
+    def get_data_slice(self, look_back):
+        index = self.data.index[:self._counter]
+        index = index[-look_back:]
+        index = index[index.date == index[-1].date()]
+            
+        return self.data.loc[index,:]
                    
     @property
     def current_price(self):

@@ -23,7 +23,7 @@ class AvgTrueRange(Feature):
             
         feature /= data['Close']
         return feature
-    
+   
 class High(Feature):
     def __call__(self, data):
         h = data['High'].rolling(self.t_strings[0]).max()

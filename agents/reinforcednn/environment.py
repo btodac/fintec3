@@ -20,7 +20,7 @@ class Env(object):
         log.info('Starting environment')
         self.market_data_gen = MarketDataGen(observer)
         self.broker = Broker(self.market_data_gen)
-        self.input_data_size = (observer.shape)
+        self.input_data_size = (observer.shape[0] + 30 * 3,)
         self._last_action = 2
         self._profit_history = [0]
         self._action_history = [0]
@@ -38,11 +38,11 @@ class Env(object):
         elif action == 2:
             score = -DO_NOTHING_PUNISHMENT
                 
-        if self.broker.funds > 100:
-            #score = 500
+        if self.broker.current_equity > 500:
+            score = 500
             done = True
-        elif self.broker.funds < -100:
-            #score = -500
+        elif self.broker.current_equity < -500:
+            score = -500
             done = True
         else:
             #score = min(score,0)
@@ -52,7 +52,7 @@ class Env(object):
         self._profit_history.append(self.broker.current_equity)# / 50)
         self._action_history.append(action)
             
-        observation, reset = next(self.market_data_gen)
+        observation, reset = self.make_state()
         if reset:
             self.reset()
         
@@ -65,12 +65,16 @@ class Env(object):
         self._last_action = 2
         self._profit_history = [0]
         self._action_history = [0]
-        observation, reset = next(self.market_data_gen)
+        observation, reset = self.make_state()
         return observation, False      
     
     def make_state(self,):
         observation, done = next(self.market_data_gen)
-    
+        
+        x = self.market_data_gen.get_data_slice(30)['Open'].to_numpy()
+        price = np.zeros(30)
+        price[-len(x):] = x
+        
         x = np.array(self._profit_history[-30:])
         profits = np.zeros(30)
         profits[-len(x):] = x
@@ -79,5 +83,12 @@ class Env(object):
         actions = np.zeros(30)
         actions[-len(x):] = x
     
-        state_next = np.concatenate((observation, actions, profits))
+        state_next = np.concatenate((observation, price, actions, profits))
         return state_next, done
+
+if __name__ == "__main__":
+    from agents.preprocessing import ObservationBuilder
+    observer = ObservationBuilder(['10min_Std',])
+    env = Env(observer)
+    state = env.make_state()
+        

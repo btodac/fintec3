@@ -54,7 +54,7 @@ if not restart:
     params = TrainingParams()
     observer = ObservationBuilder(columns)
     env = Env(observer=observer)
-    rl_agent = RLAgent(observer.shape)
+    rl_agent = RLAgent(env.input_data_size)
     trainer = Trainer(rl_agent=rl_agent, env=env, model_dir=save_file,
                  training_params = params, restart=False)
 else:
