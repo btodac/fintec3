@@ -62,10 +62,9 @@ if not restart:
     params = TrainingParams()
     observer = ObservationBuilder(columns)
     env = Env(observer=observer)
-    rlagent = RLAgent(observer.shape)
-    trainer = Trainer(model=model, model_target=model_target, env=env, model_dir=save_file,
-                 optimizer = optimizer, loss_function = loss_function, training_params = params,
-                 restart=False)
+    rl_agent = RLAgent(observer.shape)
+    trainer = Trainer(rl_agent=rl_agent, env=env, model_dir=save_file,
+                 training_params = params, restart=False)
 else:
     trainer = Trainer(restart=True, model_dir=save_file)
 

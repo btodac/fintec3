@@ -10,8 +10,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 
 class RLAgent(object):
-    def __init__(self,input_shape):
-        
+    def __init__(self, input_shape):
         self.optimizer = keras.optimizers.Adam(learning_rate=0.0001, 
                                           clipnorm=1.0)
         # Using huber loss for stability
@@ -21,6 +20,7 @@ class RLAgent(object):
         self.model_target = self.create_q_model(input_shape)
     
     def create_q_model(self, input_data_size,):
+        print(input_data_size)
         model = keras.Sequential()
         model.add(layers.Input(shape=input_data_size))
         model.add(layers.Flatten())
@@ -78,3 +78,23 @@ class RLAgent(object):
 
     def update_target_network(self):
         self.model_target.set_weights(self.model.get_weights())
+        
+    def __reduce__(self):
+        state = (
+            self.optimizer.get_config(),
+            self.loss_function.get_config(),
+            self.model.get_config(), 
+            self.model.get_weights(),
+            self.model_target.get_config(),
+            self.model_target.get_weights(),
+            )
+        
+        return (type(self)), (self.model.input_shape[-1],), state
+      
+    def __setstate__(self, state):
+        self.optimizer = keras.optimizers.Adam.from_config(state[0])
+        self.loss_function = keras.losses.Huber.from_config(state[1])
+        self.model = keras.Sequential().from_config(state[2])
+        self.model.set_weights(state[3])
+        self.model_target = keras.Sequential().from_config(state[4])
+        self.model_target.set_weights(state[5])

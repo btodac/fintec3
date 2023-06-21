@@ -16,38 +16,42 @@ class Position(object):
     
     def __init__(self, opening_price, direction):
         self.opening_price = opening_price
-        self.direction = direction
+        self.direction = [1,-1][direction]
         self.max_profit = -SPREAD
         
     def current_profit_loss(self, price):
-        return self.direction * (price - self.opening_price) * 1e4 - SPREAD
+        return self.direction * (price - self.opening_price) - SPREAD
     
     def profit_delta(self, price):
         profit = self.current_profit_loss(price)
         return profit
     
 class Broker(object):
-    def __init__(self, market_data):
-        self.market_data = market_data
+    def __init__(self, market_data_gen):
+        self.market_data_gen = market_data_gen
         self.positions = []
         self.funds = 0.0
     
     def open_position(self, direction):
-        self.positions.append(Position(self.market_data.current_price))
+        self.positions.append(Position(self.market_data_gen.current_price, direction))
     
     def close_position(self,):
         position = self.positions.pop()
-        return position.current_profit_loss(self.market_data.current_price)
+        self.funds += position.current_profit_loss(self.market_data_gen.current_price)
+        #return position.current_profit_loss(self.market_data_gen.current_price)
         
     @property
     def current_profit_loss(self,):
-        price = self.market_data.current_price
+        price = self.market_data_gen.current_price
         pl = 0.0
         for position in self.positions:
             pl += position.current_profit_loss(price)
         
         return pl
     
+    @property
+    def current_equity(self,):
+        return self.funds + self.current_profit_loss
     def reset(self,):
         self.positions = []
         self.funds = 0.0

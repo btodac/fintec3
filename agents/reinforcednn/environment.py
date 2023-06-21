@@ -9,26 +9,27 @@ import logging
 import numpy as np
 
 from agents.reinforcednn.broker import Broker
+from agents.reinforcednn.marketdata import MarketDataGen
 
 log = logging.getLogger(__name__)
 
 DO_NOTHING_PUNISHMENT = 0#1.5#0.25
 
 class Env(object):
-    def __init__(self, observer, market_data_gen):
+    def __init__(self, observer):
         log.info('Starting environment')
-        self._observer = observer
-        self.broker = Broker(market_data_gen)
-        self.input_data_size = (self._observer.shape)
-        self._last_action = 0
+        self.market_data_gen = MarketDataGen(observer)
+        self.broker = Broker(self.market_data_gen)
+        self.input_data_size = (observer.shape)
+        self._last_action = 2
         self._profit_history = [0]
         self._action_history = [0]
         
     def step(self, action):
         score = 0
 
-        if action != self.last_action:
-            if self.last_action != 2:
+        if action != self._last_action:
+            if self._last_action != 2:
                 self.broker.close_position()
             if action != 2:
                 self.broker.open_position(action)
@@ -46,28 +47,35 @@ class Env(object):
             self._last_action = action
             done = False
             
-        profit = self.funds
-        if self.position is not None:
-            profit += self.broker.current_profit_loss
-            
-        self._profit_history.append(profit)# / 50)
+        self._profit_history.append(self.broker.current_equity)# / 50)
         self._action_history.append(action)
             
-        market_data, reset = next(self.market_data_gen)
+        observation, reset = next(self.market_data_gen)
         if reset:
             self.reset()
-            
-        observation = self.observer(market_data)
+        
         return observation, score, done, 
     
            
     def reset(self):
         #get initial observation
         self.broker.reset()
-        self._last_action = 0
+        self._last_action = 2
         self._profit_history = [0]
         self._action_history = [0]
-        market_data, reset = next(self.market_data_gen)
-        observation = self.observer(market_data)
-        return observation              
-        
+        observation, reset = next(self.market_data_gen)
+        return observation, False      
+    
+    def make_state(self,):
+        observation, done = next(self.market_data_gen)
+    
+        x = np.array(self._profit_history[-30:])
+        profits = np.zeros(30)
+        profits[-len(x):] = x
+    
+        x = np.array(self._action_history[-30:])
+        actions = np.zeros(30)
+        actions[-len(x):] = x
+    
+        state_next = np.concatenate((observation, actions, profits))
+        return state_next, done

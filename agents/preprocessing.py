@@ -21,7 +21,10 @@ class ObservationBuilder(object):
     
     @property
     def shape(self):
-        return (len(self.columns), self.back_features[0])
+        if self.back_features is not None:
+            return (len(self.columns), self.back_features[0])
+        else:
+            return len(self.columns)
     
     def make_observations(self, data, opening_time, closing_time, tz):
         data = data.copy()

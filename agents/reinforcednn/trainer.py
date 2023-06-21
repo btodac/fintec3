@@ -28,13 +28,13 @@ class TrainingParams(object):
         self.gamma_max = 0.9
         self.gamma_interval = (self.gamma_max - self.gamma)
         self.epsilon = 1.0  # Epsilon greedy parameter
-        self.epsilon_min = 0.1#25  # Minimum epsilon greedy parameter
+        self.epsilon_min = 0.05  # Minimum epsilon greedy parameter
         self.epsilon_max = self.epsilon  # Maximum epsilon greedy parameter
         self.epsilon_interval = (
             self.epsilon_max - self.epsilon_min
             )  # Rate at which to reduce chance of random action being taken
         self.batch_size = 32  # Size of batch taken from replay buffer
-        self.num_actions = 3 # (HOLD/BUY/SELL)
+        self.num_actions = 3 # (BUY/SELL/HOLD)
         self.max_frames = 9e5
         # Number of frames to take random action and observe output
         self.epsilon_random_frames = 5e4
@@ -43,11 +43,11 @@ class TrainingParams(object):
         # Maximum replay length
         self.max_memory_length = 1e5
         # Train the model after 4 actions
-        self.update_after_actions = 5
+        self.update_after_actions = 8
         # How often to update the target network
         self.update_target_network = 5e3 # 100 * self.update_after_actions
         # Save every n frames
-        self.n_frames_save = 5e4
+        self.n_frames_save = 1e4
         
     def decay_epsilon(self):
         self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
@@ -145,7 +145,7 @@ class EarlyStopping(object):
 
 class Trainer(object):
     
-    def __init__(self, model=None, model_target=None, env=None, model_dir=None,
+    def __init__(self, rl_agent=None, env=None, model_dir=None,
                  optimizer = None, loss_function = None, training_params = None,
                  restart=False
                  ):
@@ -157,11 +157,9 @@ class Trainer(object):
             #else:
             #    self.train(**self.training_state.__dict__)
         else:
-            self.model = model
-            self.model_target = model_target
+            self.rl_agent = rl_agent
             self.model_dir = model_dir
             self.env = env
-            self.observer = env._observer
             self.optimizer = optimizer
             self.loss_function = loss_function
             self.params = training_params  
@@ -185,13 +183,13 @@ class Trainer(object):
                 action, action_probs = self.make_action(frame_count, state)
 
                 # Apply the sampled action in our environment
-                state_next, reward, done, tick_count = self.env.step(action)
+                state_next, reward, done, = self.env.step(action)
                 #'''
                 #sys.stdout.write("\033[K")
                 #sys.stdout.flush()
                 running_str = f'Running reward {running_reward:6.2f} E: {episode_count} '\
                       f'W/L:{wins:>6.3f} Avg time: {avg_t:5.0f} '\
-                      f'frames: {frame_count:<9d}, P/L: {self.env.funds:9.2f}, action: {action}, '\
+                      f'frames: {frame_count:<9d}, P/L: {self.env.broker.funds:9.2f}, action: {action}, '\
                       f'reward: {reward:6.2f} ' \
                       f'{action_probs[0]}'
                 print(f'\r{running_str:190}', end='\r', flush=True)
@@ -205,20 +203,20 @@ class Trainer(object):
                 # Update every fourth frame and once batch size is over 32
                 if frame_count % self.params.update_after_actions == 0 and \
                         len(self.history) > self.params.batch_size:                       
-                    self.rlagent.update_model(
+                    self.rl_agent.update_model(
                         *self.history.get_batch(self.params.batch_size), 
                         self.params.gamma
                         )
                 
                 if frame_count % self.params.update_target_network == 0:
                     # update the the target network with new weights
-                    self.update_target_network()
+                    self.rl_agent.update_target_network()
                 
                 if frame_count % self.params.n_frames_save == 0:
-                    self.save_optimizer_state(
-                        TrainingState(state, frame_count, running_reward , episode_count,
+                    training_state = TrainingState(
+                        state, frame_count, running_reward , episode_count,
                         wins, avg_t, t_to_end, outcomes, episode_reward_history,)
-                        )
+                    self.save_optimizer_state(training_state)
                     
                 if done:
                     aw = 0.05
@@ -255,8 +253,8 @@ class Trainer(object):
                     stop_training or \
                     frame_count > self.params.max_frames:  # Condition to consider the task solved
 
-                if stop_training:
-                    self.model.set_weights(self.early_stopping.model_weights)
+                #if stop_training:
+                #    self.model.set_weights(self.early_stopping.model_weights)
                 
                 self.save_optimizer_state(
                     TrainingState(state, frame_count, running_reward , episode_count,
@@ -275,7 +273,7 @@ class Trainer(object):
             self.params.epsilon > np.random.rand(1)[0]:
             action, action_probs = self._take_random_action()
         else:
-            action, action_probs = self.rlagent.predict(observation)
+            action, action_probs = self.rl_agent.predict(observation)
         
         if frame_count > self.params.epsilon_random_frames:
             self.params.decay_epsilon()
@@ -290,14 +288,15 @@ class Trainer(object):
         return action, action_probs[np.newaxis,:]
          
     def save_optimizer_state(self, training_state):
-        self.model.save(self.model_dir,)
-        data = {'model' : self.model,
-                'model_target' : self.model_target,
+        #self.model.save(self.model_dir,)
+        try:
+            os.makedirs(self.model_dir)
+        except OSError:
+            pass
+        data = {'rl_agent' : self.rl_agent,
                 'env' : self.env,
-                'optimizer' : self.optimizer.get_config(),
-                'loss_function' : self.loss_function,
                 'params' : self.params,
-                'early_stopping' : self.early_stopping,
+                #early_stopping' : self.early_stopping,
                 'history' : self.history,
                 'training_state' : training_state,
                 'model_dir' : self.model_dir,
@@ -320,15 +319,11 @@ class Trainer(object):
             with open(model_dir + '/run_state_bkup.pkl', 'rb') as f:        
                 state = pickle.load(f)
             
-        self.model = state['model']
-        self.model_target = state['model_target']
+        self.rl_agent = state['rl_agent']
         self.model_dir = state['model_dir']
         self.env = state['env']
-        self.observer = self.env._observer
-        self.optimizer = keras.optimizers.Adam.from_config(state['optimizer'])
-        self.loss_function = state['loss_function']
         self.params = state['params']
-        self.early_stopping = state['early_stopping']
+        #self.early_stopping = state['early_stopping']
         self.history = state['history']
         self.training_state = state['training_state']
             

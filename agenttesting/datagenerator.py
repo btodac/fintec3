@@ -19,13 +19,15 @@ class GBMDataGen(object):
             drift=0, # points per second
             volatility=0.005, 
             start_time=pd.Timestamp("00:00"),
-            end_time=pd.Timestamp("23:59")
+            end_time=pd.Timestamp("23:59"),
+            tz='UTC',
             ):
         #self.index = pd.bdate_range(start_date, end_date, freq=freq)
         self.start_date = start_date
         self.end_date = end_date
         self.start_time = start_time
         self.end_time = end_time
+        self.tz = tz
         self.freq = freq
         self.initial_value = initial_value
         self.drift = drift
@@ -59,13 +61,15 @@ class GBMDataGen(object):
     def conv_to_ohlc(self, data, freq):
         df = data.resample(freq).ohlc()
         df.columns = [c.capitalize() for c in df.columns]
-        return df
+        return df.loc[self._make_index(freq),:]
     
     def _make_index(self, freq):
         index = pd.bdate_range(self.start_date, self.end_date, freq=freq)
         index = index.to_series()
         index = index.between_time(self.start_time.time(), self.end_time.time())
-        return index.index
+        index = index.index
+        index = index.tz_localize(self.tz)
+        return index
     
     
 if __name__ == "__main__":
