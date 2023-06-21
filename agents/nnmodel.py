@@ -23,7 +23,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 
 log = logging.getLogger(__name__)
 
-class NNAgent(object):
+class NNModel(object):
     def __init__(self,):
         '''
         NNAgent is a subclass of Agent that uses a multi layer 

@@ -16,7 +16,7 @@ import pandas as pd
 from brokerinterface import IGManager, PositionManager, MarketAgent, SessionManager
 from utillities.user_data import Account
 ####################################################################################################
-account_type = 'live'
+account_type = 'demo'
 tickers = ['^GDAXI','^NDX']
 ####################################################################################################
 log_path = "/home/mtolladay/Documents/finance/logs/"
@@ -58,9 +58,9 @@ position_manager = PositionManager(account.acc_number, ig_manager.open_fcn, ig_m
 agents = []
 for ticker in tickers:
     if ticker == "^GDAXI":
-        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_GDAXI_HD1KR5/model.pkl'
+        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_GDAXI_U1RDCU/model.pkl'
     elif ticker == '^NDX':
-        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_NDX_RLDTC0/model.pkl' #NB_NDX_ABDRVK
+        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_NDX_SLNF0H/model.pkl' #NB_NDX_ABDRVK
         
     with open(filename,'rb') as f:
         model = pickle.load(f)

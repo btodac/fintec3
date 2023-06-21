@@ -115,7 +115,23 @@ class Agent(object):
         None.
 
         '''
-
+        if hasattr(model, 'make_prediction') and hasattr(model, 'fit'):
+            self.model = model
+        elif type(model) is str:
+            if model.lower() == "bayes":
+                from agents.bayesmodel import BayesModel
+                self.model = BayesModel(columns)
+            elif model.lower() == "nn":
+                from agents.nnmodel import NNModel
+                self.model = NNModel()
+            else:
+                raise ValueError('Unrecognised model string, must be one of "bayes"/"nn"')
+        else:
+            raise ValueError('The model argument must be either a string ("bayes"/"nn") '
+                                 'or be a valid model class with "make_prediction" and '
+                                 '"fit" methods')
+            
+        
         self._params = {
             'ticker': ticker,
             'columns': columns,
@@ -132,12 +148,14 @@ class Agent(object):
             self.observer = ObservationBuilder(columns,)
         else:
             self.observer = observer
+            
         if target_generator is None:
-            self.target_generator = OrderBasedTargetGen(ticker, 
-                                                        self._params['take_profit'], 
-                                                        self._params['stop_loss'], 
-                                                        self._params['time_limit']
-                                                        )
+            self.target_generator = OrderBasedTargetGen(
+                ticker, 
+                self._params['take_profit'], 
+                self._params['stop_loss'], 
+                self._params['time_limit'],
+                )
         else:
             self.target_generator = target_generator
     
@@ -259,5 +277,5 @@ class Agent(object):
                        self.model, self._params, self.observer, 
                        self.target_generator)
         
-        return type(self), args_kwargs
+        return type(self), (args_kwargs)
         

@@ -4,7 +4,7 @@ save_data_on_exit = True
 save_history = True
 save_non_project_files = False
 project_type = 'empty-project-type'
-recent_files = ['naivebayes.py', 'main2.py', 'todo.txt', 'nn.py', 'agents/preprocessing.py', 'agents/agent.py', 'agents/bayesagent.py']
+recent_files = ['naivebayes.py', 'main2.py', 'todo.txt', 'agents/preprocessing.py', 'agenttesting/datagenerator.py', 'agenttesting/results.py', 'nn.py']
 
 [main]
 version = 0.2.0

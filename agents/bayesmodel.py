@@ -12,13 +12,11 @@ from scipy import stats
 import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn'
 
-from agents import Agent
-
 log = logging.getLogger(__name__)
 
-class BayesAgent(object):
+class BayesModel(object):
     '''    
-    BayesAgent is a subclass of Agent the uses a naive Bayes
+    BayesModel provides an interface to a naive Bayes
     classifier to make predictions
     '''
         
@@ -115,7 +113,7 @@ class BayesAgent(object):
                     o = observations[is_target,i]
                     o = o[o!=0]
                     p = self.dist_functions[column].fit(o)
-                    class_dists.append(self.dist_functions(*p))
+                    class_dists.append(self.dist_functions[column](*p))
                 distributions[target_class] = class_dists
             
             self.distributions = distributions
@@ -128,7 +126,7 @@ class BayesAgent(object):
                 'priors' : self.priors,
                 'distributions' : self.distributions,
                 '_is_fit' : self._is_fit}
-            return type(self), self._columns,  state
+            return type(self), (self._columns,),  state
         else:
-            return type(self), self._columns   
+            return type(self), (self._columns,)   
                 

@@ -32,8 +32,8 @@ class GBMDataGen(object):
         self.volatility = volatility
     
     def generate(self,):
-        n_seconds = 0.25 * convert_offset_to_seconds(self.freq) 
-        dp_index = self._make_index(f"{n_seconds * 1e6}U")
+        tick_seconds = 0.25 * convert_offset_to_seconds(self.freq) # tick in seconds (4 datapoints)
+        dp_index = self._make_index(f"{tick_seconds * 1e6}U")
         n_points = len(dp_index) 
         
         if type(self.drift) == np.array and type(self.volatility) == np.array:
@@ -41,7 +41,7 @@ class GBMDataGen(object):
         else:
             data = self._generate_motion(
                 n_points, self.initial_value, 
-                self.drift, self.volatility, n_seconds
+                self.drift, self.volatility, tick_seconds
                 )
 
         data = pd.Series(data, index=dp_index)
@@ -70,18 +70,22 @@ class GBMDataGen(object):
     
 if __name__ == "__main__":
     import mplfinance as mpl
+    initial_value = 1e4
+    final_value = 10050
+    change = (final_value -initial_value) / initial_value
+    drift = np.log(1 + change) / (511 * 60) # log(1 + R) / (n_points * freq_as_seconds)
     
     data_gen = GBMDataGen(start_date=pd.Timestamp("2023-01-01"),
-                          end_date=pd.Timestamp("2023-02-01"),
-                          freq='1H',#'1min',
-                          initial_value=10000,
-                          drift=0.00000001, # points per 0.25 second
-                          volatility=0.00001, # points per 0.25 second
+                          end_date=pd.Timestamp("2026-06-02"),
+                          freq='1min',
+                          initial_value=initial_value,
+                          drift=0,#drift,#0.000000003, # final value = initial_value + (1+drift*nticks*tick_length)
+                          volatility=4e-6,#0.00005,#0.00001, # (daily_std/initial_value)**2 * freq_as_seconds
                           start_time=pd.Timestamp("09:00"),
                           end_time=pd.Timestamp("17:30"),
                           )
     df = data_gen.generate()
-    mpl.plot(df.iloc[:50], type='candle', style='yahoo', title='Data')                     
     
-    df_rs = data_gen._raw.resample('1D').ohlc()
+    #mpl.plot(df.iloc[:50], type='candle', style='yahoo', title='Data')                     
+    df_rs = data_gen._raw.resample('1W').ohlc()
     mpl.plot(df_rs, type='candle', style='yahoo', title='Data')   

@@ -7,7 +7,7 @@ Created on Fri Mar 17 21:31:29 2023
 """
 import pandas as pd
 
-from agents.bayesagent import BayesAgent
+from agents.agent import Agent
 from agents.targetgenerators import TrendBasedTargetGen, VelocityBasedTargetGen
 from agenttesting.results import Results
 #from results.results import Results
@@ -15,13 +15,13 @@ from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
 save_model = False
-ticker = "^GDAXI"
+ticker = "^NDX"
 ndx_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
     'time_limit': 5,#5,
     'live_tp': 30,
-    'live_sl': 5,
+    'live_sl': 10,
     'live_tl': 10,#np.inf,
     'up' : 20,
     'down' : -20,
@@ -32,7 +32,7 @@ gdaxi_params = {
     'stop_loss': 5, #10
     'time_limit': 5,#5,
     'live_tp': 30,
-    'live_sl': 5,
+    'live_sl': 10,
     'live_tl': 10,#np.inf,
     'up' : 20,
     'down' : -20,
@@ -43,7 +43,7 @@ if ticker == "^NDX":
 elif ticker == "^GDAXI":
     params = gdaxi_params
 # Observation parameters
-'''
+#'''
 columns = [
     #'Range',
     #'16min_AvgTrueRange','32min_AvgTrueRange',
@@ -72,7 +72,7 @@ columns = [
         '10min_StochOsc',
         #'10min_StochOsc',#'20min_StochOsc','40min_StochOsc',
     ]
-#'''
+'''
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 #'''
@@ -107,21 +107,19 @@ training_data = training_data.between_time("10:00", '17:30')
 #training_data = training_data.between_time("11:30", '16:00')
 #validation_data = validation_data.between_time("11:30", '16:00')
 
-
-model = BayesAgent(ticker, columns, params=params)
-target_generator = TrendBasedTargetGen(model._params['up'], 
-                                       model._params['down'], 
-                                       model._params['to'],
-                                       up_down_ratio=0.75)
+target_generator = TrendBasedTargetGen(
+    params['up'], params['down'], params['to'], up_down_ratio=0.75)
 #target_generator = VelocityBasedTargetGen(up=5, down=-5, time_limit=model._params['to']) #Dax=5
-model.target_generator = target_generator
-model.fit(training_data, validation_data)
+agent = Agent(ticker, columns, model="bayes", params=params, 
+              target_generator=target_generator)
 
-predictions, probabilities, order_datetimes = model.predict(validation_data)
+agent.fit(training_data, validation_data)
+
+predictions, probabilities, order_datetimes = agent.predict(validation_data)
 results = Results(predictions, order_datetimes, ticker,
-                    take_profit=model._params['live_tp'],
-                    stop_loss=model._params['live_sl'],
-                    time_limit=model._params['live_tl'],
+                    take_profit=params['live_tp'],
+                    stop_loss=params['live_sl'],
+                    time_limit=params['live_tl'],
                     data=validation_data,
                     )
 r = results.positions_results.loc[:,['N_Trades',
@@ -147,7 +145,7 @@ if save_model:
     model_dir = '/home/mtolladay/Documents/finance/NBmodels/' + model_name + '/' 
     os.makedirs(model_dir)
     with open(model_dir + 'model.pkl', 'wb') as f:
-        pickle.dump(model, f, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(agent, f, protocol=pickle.HIGHEST_PROTOCOL)
     with open(model_dir + 'results.pkl', 'wb') as f:
         pickle.dump(results, f, protocol=pickle.HIGHEST_PROTOCOL)
     print('##########################################################################')
