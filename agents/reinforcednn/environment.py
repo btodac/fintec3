@@ -67,5 +67,7 @@ class Env(object):
         self._last_action = 0
         self._profit_history = [0]
         self._action_history = [0]
-        return None                      
+        market_data, reset = next(self.market_data_gen)
+        observation = self.observer(market_data)
+        return observation              
         
