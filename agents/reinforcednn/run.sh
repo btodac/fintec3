@@ -1,7 +1,13 @@
 #!/bin/bash
+
+restart=$1
 for j in {0..20};
 do
-    sed -i "s/restart = True/restart = False/g" main.py
+    if [ $restart ]; then
+        sed -i "s/restart = False/restart = True/g" main.py
+    else
+        sed -i "s/restart = True/restart = False/g" main.py
+    fi
     for i in {0..10}; 
     do 
         python main.py

@@ -50,7 +50,7 @@ class MarketDataGen(object):
                    
     @property
     def current_price(self):
-        return float(self.data['Close'].iloc[self._counter])
+        return float(self.data['Close'].iloc[self._counter-1])
     
     def _make_new_data(self,):
         self._data_gen.drift = np.random.normal(scale=3) * 1e-9

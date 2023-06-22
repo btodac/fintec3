@@ -13,7 +13,7 @@ from agents.reinforcednn.marketdata import MarketDataGen
 
 log = logging.getLogger(__name__)
 
-DO_NOTHING_PUNISHMENT = 0#1.5#0.25
+DO_NOTHING_PUNISHMENT = 0.25#1.5#0.25
 
 class Env(object):
     def __init__(self, observer):
@@ -33,7 +33,7 @@ class Env(object):
                 self.broker.close_position()
             if action != 2: # open the new order
                 self.broker.open_position(action)
-                score = self.broker.current_equity
+                score = self.broker.current_profit_loss
             
         elif action == 2:
             score = -DO_NOTHING_PUNISHMENT

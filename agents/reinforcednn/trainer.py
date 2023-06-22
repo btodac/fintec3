@@ -39,7 +39,7 @@ class TrainingParams(object):
         # Number of frames to take random action and observe output
         self.epsilon_random_frames = 5e4
         # Number of frames for exploration
-        self.epsilon_greedy_frames = 2e5
+        self.epsilon_greedy_frames = 1e6
         # Maximum replay length
         self.max_memory_length = 1e5
         # Train the model after 4 actions
@@ -164,7 +164,7 @@ class Trainer(object):
             self.loss_function = loss_function
             self.params = training_params  
             
-            self.early_stopping = EarlyStopping()
+            #self.early_stopping = EarlyStopping()
             self.history = History(training_params.max_memory_length)
             self.training_state = TrainingState()
                   
@@ -187,11 +187,15 @@ class Trainer(object):
                 #'''
                 #sys.stdout.write("\033[K")
                 #sys.stdout.flush()
-                running_str = f'Running reward {running_reward:6.2f} E: {episode_count} '\
-                      f'W/L:{wins:>6.3f} Avg time: {avg_t:5.0f} '\
-                      f'frames: {frame_count:<9d}, P/L: {self.env.broker.funds:9.2f}, action: {action}, '\
-                      f'reward: {reward:6.2f} ' \
-                      f'{action_probs[0]}'
+                running_str = f'Running reward {running_reward:6.2f}'\
+                    f'E: {episode_count} '\
+                    f'W/L:{wins:>6.3f}' \
+                    f'Avg time: {avg_t:5.0f} '\
+                    f'frames: {frame_count:<9d},'\
+                    f'P/L: {self.env.broker.funds:9.2f}, '\
+                    f'action: {action}, '\
+                    f'reward: {reward:6.2f} ' \
+                    f'{action_probs[0]}'
                 print(f'\r{running_str:190}', end='\r', flush=True)
                 #'''
                 episode_reward += reward
@@ -207,11 +211,11 @@ class Trainer(object):
                         *self.history.get_batch(self.params.batch_size), 
                         self.params.gamma
                         )
-                
+                # update the the target network with new weights
                 if frame_count % self.params.update_target_network == 0:
-                    # update the the target network with new weights
+                    
                     self.rl_agent.update_target_network()
-                
+                # Backup state
                 if frame_count % self.params.n_frames_save == 0:
                     training_state = TrainingState(
                         state, frame_count, running_reward , episode_count,
