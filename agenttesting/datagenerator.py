@@ -21,8 +21,13 @@ class GBMDataGen(object):
             start_time=pd.Timestamp("00:00"),
             end_time=pd.Timestamp("23:59"),
             tz='UTC',
+            rho=0.0,
+            kappa=0.001,
+            theta=0.005,
+            chi=1e-5
             ):
-        #self.index = pd.bdate_range(start_date, end_date, freq=freq)
+        if start_date.date() == end_date.date():
+            end_date += pd.Timedelta(days=1)
         self.start_date = start_date
         self.end_date = end_date
         self.start_time = start_time
@@ -32,9 +37,19 @@ class GBMDataGen(object):
         self.initial_value = initial_value
         self.drift = drift
         self.volatility = volatility
+        
+        self.rho = rho
+        self.kappa = kappa # rate for return to mean
+        self.theta = theta # long term average volatility
+        self.chi = chi # volatility of the volatility
+        assert (2 * self.kappa * self.theta) > (self.chi ** 2), \
+            "Feller condition fail: 2 * kappa * theta <= chi ** 2! "\
+            "Volatility may become negative"
     
     def generate(self,):
-        tick_seconds = 0.25 * convert_offset_to_seconds(self.freq) # tick in seconds (4 datapoints)
+        tick_seconds = 1/4 * convert_offset_to_seconds(self.freq) # tick in seconds (5datapoints)
+        # TODO: ohlc data needs to use the close value of one 
+        # time period as the open value of the next!
         dp_index = self._make_index(f"{tick_seconds * 1e6}U")
         n_points = len(dp_index) 
         
@@ -42,8 +57,7 @@ class GBMDataGen(object):
             pass
         else:
             data = self._stochastic_volatility_motion(#self._generate_motion(
-                n_points, self.initial_value, 
-                self.drift, self.volatility, tick_seconds
+                n_points, self.initial_value, tick_seconds
                 )
 
         data = pd.Series(data, index=dp_index)
@@ -58,37 +72,25 @@ class GBMDataGen(object):
         
         return initial_value * motion.cumprod()
     
-    def _stochastic_volatility_motion(
-            self, n_points, initial_value, drift, volatility0, dt):
+    def _stochastic_volatility_motion(self, n_points, initial_value, dt):
         mean = np.array([0,0])
-        std1 = dt
-        std2 = dt
-        # rho in [-0.01,0.01] otherwise the multivariate normal
-        # creates a drift!
-        rho = 0.0 # 0.0 was used by Heston but this can be fit to market data
         cov = np.array([
-            [std1 , rho * np.sqrt(std1 * std2)],
-            [rho * np.sqrt(std1 * std2), std2]
+            [dt , self.rho * dt],
+            [self.rho * dt, dt]
             ])
         
         gmb = np.random.multivariate_normal(mean, cov, size=(n_points))
-        # NB: 2 * kappa * theta > chi ** 2 must be enforced for v to remain +ve
-        kappa = 0.001 # rate for return to mean
-        theta = volatility0 # long term average volatility
-        chi = 1e-5 # volatility of the volatility
-        assert (2 * kappa * theta) > (chi ** 2), \
-            "Feller condition fail: 2 * kappa * theta <= chi ** 2! "\
-            "Volatility may become negative"
-        v = volatility0 # the volatility
-        volatility = theta * np.ones(n_points)
+        v = self.theta # the instantaneous volatility
+        volatility = self.theta * np.ones(n_points)
         for i in range(n_points):
-            dv = (kappa * (theta - v) * dt + chi * np.sqrt(v) * gmb[i,1])
+            dv = (self.kappa * (self.theta - v) * dt \
+                  + self.chi * np.sqrt(v) * gmb[i,1])
             v += dv
             volatility[i] = v
         
         motion = np.exp(
-            (drift - volatility**2 / 2) * dt +
-            volatility * gmb[:,0].squeeze()
+            (self.drift - self.volatility**2 / 2) * dt +
+            self.volatility * gmb[:,0].squeeze()
         )
         return initial_value * motion.cumprod()
     
@@ -102,7 +104,10 @@ class GBMDataGen(object):
         index = index.to_series()
         index = index.between_time(self.start_time.time(), self.end_time.time())
         index = index.index
-        index = index.tz_localize(self.tz)
+        try:
+            index = index.tz_localize(self.tz)
+        except TypeError:
+            pass
         return index
     
     
@@ -114,7 +119,7 @@ if __name__ == "__main__":
     drift = np.log(1 + change) / (511 * 60) # log(1 + R) / (n_points * freq_as_seconds)
     
     data_gen = GBMDataGen(start_date=pd.Timestamp("2023-01-01"),
-                          end_date=pd.Timestamp("2026-06-02"),
+                          end_date=pd.Timestamp("2023-01-05"),
                           freq='1min',
                           initial_value=initial_value,
                           drift=0,#drift,#0.000000003, # final value = initial_value + (1+drift*nticks*tick_length)

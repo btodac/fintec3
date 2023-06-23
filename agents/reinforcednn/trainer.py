@@ -6,7 +6,7 @@ Created on Thu Mar  2 11:33:20 2023
 @author: mtolladay
 """
 import os
-#import sys
+import sys
 import pickle
 #import string
 #import random
@@ -35,7 +35,7 @@ class TrainingParams(object):
             )  # Rate at which to reduce chance of random action being taken
         self.batch_size = 32  # Size of batch taken from replay buffer
         self.num_actions = 3 # (BUY/SELL/HOLD)
-        self.max_frames = 9e5
+        self.max_frames = 5e5
         # Number of frames to take random action and observe output
         self.epsilon_random_frames = 5e4
         # Number of frames for exploration
@@ -174,6 +174,7 @@ class Trainer(object):
     def train(self, state=None, frame_count=0, running_reward=0, episode_count=0, wins=0, avg_t=0,
               t_to_end=0, outcomes = [], episode_reward_history=[], episode_reward = 0):
         
+        initiial_frame = frame_count
         while True:  # Run until solved
             if state is None:
                 state, done  = self.env.reset()
@@ -189,12 +190,12 @@ class Trainer(object):
                 #sys.stdout.flush()
                 running_str = f'Running reward {running_reward:6.2f}'\
                     f'E: {episode_count} '\
-                    f'W/L:{wins:>6.3f}' \
+                    f'W/L:{wins:>6.3f} '\
                     f'Avg time: {avg_t:5.0f} '\
                     f'frames: {frame_count:<9d},'\
                     f'P/L: {self.env.broker.funds:9.2f}, '\
                     f'action: {action}, '\
-                    f'reward: {reward:6.2f} ' \
+                    f'reward: {reward:6.2f} '\
                     f'{action_probs[0]}'
                 print(f'\r{running_str:190}', end='\r', flush=True)
                 #'''
@@ -211,10 +212,11 @@ class Trainer(object):
                         *self.history.get_batch(self.params.batch_size), 
                         self.params.gamma
                         )
+                    
                 # update the the target network with new weights
                 if frame_count % self.params.update_target_network == 0:
-                    
                     self.rl_agent.update_target_network()
+                    
                 # Backup state
                 if frame_count % self.params.n_frames_save == 0:
                     training_state = TrainingState(
@@ -255,7 +257,7 @@ class Trainer(object):
             if (running_reward > 700 and frame_count > self.params.epsilon_greedy_frames) or\
                     (wins > 0.66 and frame_count > self.params.epsilon_greedy_frames) or\
                     stop_training or \
-                    frame_count > self.params.max_frames:  # Condition to consider the task solved
+                    (frame_count - initiial_frame) > self.params.max_frames:  # Condition to consider the task solved
 
                 #if stop_training:
                 #    self.model.set_weights(self.early_stopping.model_weights)
@@ -265,6 +267,8 @@ class Trainer(object):
                                   wins, avg_t, t_to_end, outcomes, episode_reward_history,)
                     )
                 print(f"Exit at {frame_count}!")
+                if (frame_count - initiial_frame) > self.params.max_frames:
+                    sys.exit()
                 break
             state, done = self.env.reset()
             episode_reward = 0
@@ -283,7 +287,6 @@ class Trainer(object):
             self.params.decay_epsilon()
             
         return action, action_probs
-    
     
     def _take_random_action(self):
         action = np.random.choice(self.params.num_actions)
@@ -332,6 +335,10 @@ class Trainer(object):
         self.training_state = state['training_state']
             
     
-
+if __name__ == "__main__":
+    save_file = "/home/mtolladay/Documents/finance/traderbots/traderbot_4NX0MN"
+    trainer = Trainer(restart=True, model_dir=save_file)
+    
+    trainer.run()
     
 

@@ -11,7 +11,7 @@ from tensorflow.keras import layers
 
 class RLAgent(object):
     def __init__(self, input_shape):
-        self.optimizer = keras.optimizers.Adam(learning_rate=0.0001, 
+        self.optimizer = keras.optimizers.Adam(learning_rate=0.00001, 
                                           clipnorm=1.0)
         # Using huber loss for stability
         self.loss_function = keras.losses.Huber()
@@ -26,7 +26,7 @@ class RLAgent(object):
         model.add(layers.Flatten())
         for i in range(5):
             model.add(layers.Dense(
-                128, activation='relu',
+                256, activation='relu',
             #                       kernel_constraint=keras.constraints.MaxNorm(max_norm),
                 ))
         model.add(layers.Dense(3, activation='softmax', ))  

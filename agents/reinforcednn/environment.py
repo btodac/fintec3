@@ -64,7 +64,7 @@ class Env(object):
         self.broker.reset()
         self._last_action = 2
         self._profit_history = [0]
-        self._action_history = [0]
+        self._action_history = [2]
         observation, reset = self.make_state()
         return observation, False      
     
@@ -72,6 +72,7 @@ class Env(object):
         observation, done = next(self.market_data_gen)
         
         x = self.market_data_gen.get_data_slice(30)['Open'].to_numpy()
+        x -= x[-1]
         price = np.zeros(30)
         price[-len(x):] = x
         

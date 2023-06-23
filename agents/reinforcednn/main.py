@@ -43,9 +43,9 @@ else:
 columns = [
     '2min_Mom','4min_Mom',
     '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
-    '128min_Trend','256min_Trend','512min_Trend',
-    '10min_Std','30min_Std',
-    '10min_20min_MeanDiff','20min_40min_MeanDiff',
+    #'128min_Trend','256min_Trend','512min_Trend',
+    #'10min_Std','30min_Std',
+    #'10min_20min_MeanDiff','20min_40min_MeanDiff',
     '10min_StochOsc','20min_StochOsc',
     ]
 
