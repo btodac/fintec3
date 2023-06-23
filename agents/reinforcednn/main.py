@@ -28,7 +28,7 @@ from agents.reinforcednn.environment import Env
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
 
-restart = False
+restart = True
 
 if restart:
     with open('finish.txt', 'r') as fh:

@@ -70,6 +70,14 @@ class MarketDataGen(object):
         self._data_gen.start_date += self._data_len
         self._data_gen.end_date += self._data_len
         
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    import mplfinance as mpl
+    from agents.preprocessing import ObservationBuilder
+    observer = ObservationBuilder(columns=['10min_Std'])
+    dg = MarketDataGen(observer)
+    
+    mpl.plot(dg.data.iloc[:100])
     
         
         

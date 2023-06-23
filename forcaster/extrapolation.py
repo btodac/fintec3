@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from agents.featurefunctions import Trend
 from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
@@ -35,9 +36,11 @@ dff = pd.DataFrame(y, index = groups.groups[list(groups.groups.keys())[0]])
 plt.plot(dff.to_numpy().mean(axis=1))
 
 
-training_data['trend'] = training_data.rolling('20min')['Close'].apply(
+linreg = training_data.rolling('20min')['Close'].apply(
     lambda x: np.polynomial.polynomial.Polynomial.fit(
         np.arange(20), np.pad(x, (20-len(x),0), mode='edge'), 1
         ).coef[1], 
     raw=True
     )
+t = Trend(['20min'])
+trend = t(training_data)
