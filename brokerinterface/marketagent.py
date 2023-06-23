@@ -73,8 +73,13 @@ class MarketDataStore(object):
     
     def get_data(self,):
         if len(self.data) != 0:
-            data = pd.concat(self.data, axis=1).T.resample(self.observation_length).ohlc().ffill()
+            data = pd.concat(self.data, axis=1).T
+            data = data.resample(self.observation_length).ohlc().ffill()
             data.columns = [c.capitalize() for c in data.columns.droplevel(0)]
+            c = data['Close']
+            c.index = c.index + pd.tseries.frequencies.to_offset(self.observation_length)
+            index = c.index.intersection(data.index)
+            data.loc[index,'Open'] = c.loc[index]
         else:
             data = pd.DataFrame(columns=['Open','High','Low','Close'])
             

@@ -6,7 +6,7 @@ Created on Thu Jun  8 22:35:31 2023
 
 TODO LIST
 
-1) Improve data export from position manager to get usefule information about sa position, currently
+1) Improve data export from position manager to get usefull information about sa position, currently
     only opening data is stored
 2) implement the super trend indicator
 3) GUI!
@@ -14,5 +14,6 @@ TODO LIST
 5) Allow different active trading times from market opening hours
 6) Multiple models based on long/short term trends
 7) Rework agenttesting to better separate out responsibilities
+8) Allow market features to include close prices of different lengths
 
 """

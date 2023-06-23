@@ -5,6 +5,7 @@ Created on Thu Oct  6 14:33:52 2022
 
 @author: mtolladay
 """
+import numpy as np
 import pandas as pd
 
 def get_ticker_time_zone(ticker):
@@ -104,3 +105,35 @@ def convert_offset_to_seconds(offset):
         raise TypeError(f'Offset was of type {type(offset)}. Must be either offset string or offset')
     else:
         return s
+
+class MarketDateTimeIndexGenerator(object):
+    
+    def __init__(self, ticker):
+        self.ticker = ticker
+        
+        self.tz = get_ticker_time_zone(ticker)
+        opening_time, closing_time = opening_and_closing_times(ticker)
+        self.opening_time = opening_time.tz_convert(self.tz)
+        self.closing_time = closing_time.tz_convert(self.tz)
+        self.holidays = holidays(ticker)
+        
+    def make_index(self, start_datetime, end_datetime, freq):
+        index = pd.bdate_range(start_datetime, end_datetime, freq=freq, tz=self.tz)
+        index = self.remove_holidays_from_index(index)
+        index = index[
+            index.indexer_between_time(
+                self.opening_time.time(), 
+                self.closing_time.time()
+                )
+            ]
+        return index
+    
+    def remove_holidays_from_index(self, datetimeindex):
+        is_holiday = np.isin(datetimeindex.date, self.holidays.date)
+        new_index = datetimeindex[np.logical_not(is_holiday)]
+        return pd.DatetimeIndex(new_index)
+        
+if __name__ == "__main__":
+    mdti = MarketDateTimeIndexGenerator('^NDX')
+    index = mdti.make_index("2022-01-01","2023-01-01",freq='T')
+        

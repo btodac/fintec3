@@ -97,7 +97,12 @@ class GBMDataGen(object):
     def conv_to_ohlc(self, data, freq):
         df = data.resample(freq).ohlc()
         df.columns = [c.capitalize() for c in df.columns]
-        return df.loc[self._make_index(freq),:]
+        df = df.loc[self._make_index(freq),:]
+        c = df['Close']
+        c.index = c.index + pd.tseries.frequencies.to_offset(freq)
+        index = c.index.intersection(df.index)
+        df.loc[index,'Open'] = c.loc[index]
+        return df
     
     def _make_index(self, freq):
         index = pd.bdate_range(self.start_date, self.end_date, freq=freq)
