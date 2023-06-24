@@ -39,11 +39,11 @@ class Env(object):
         #else:
         #    score = min(0, self.broker.current_profit_loss)
                 
-        if self.broker.current_equity > 50:
-            score = 50
+        if self.broker.current_equity > 70:
+            score = 70
             done = True
-        elif self.broker.current_equity < -50:
-            score = -50
+        elif self.broker.current_equity < -70:
+            score = -70
             done = True
         else:
             #score = min(score,0)

@@ -9,7 +9,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
-SPREAD = 0.2#1.2 #2
+SPREAD = 0.4 #2
 
 
 class Position(object):

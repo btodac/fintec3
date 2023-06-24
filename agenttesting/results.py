@@ -223,9 +223,10 @@ class SteeringResults(Results):
                                 order_datetimes.date == order['Opening_Datetime'].date()
                                 ]
                             )
+                        if dt == order['Opening_Datetime']:
+                            dt += pd.Timedelta(minutes=1)
                         closing_datetime = min(dt, dt_limit)
-                        if closing_datetime == order['Opening_Datetime']:
-                            closing_datetime += pd.Timedelta(minutes=1)
+                        
                         order['Closing_Datetime'] = closing_datetime
                         orders[order['Opening_Datetime']] = order
                         order = {}
@@ -239,9 +240,10 @@ class SteeringResults(Results):
                                 order_datetimes.date == order['Opening_Datetime'].date()
                                 ]
                             )
+                        
+                        if dt == order['Opening_Datetime']:
+                            dt += pd.Timedelta(minutes=1)
                         closing_datetime = min(dt, dt_limit)
-                        if closing_datetime == order['Opening_Datetime']:
-                            closing_datetime += pd.Timedelta(minutes=1)
                         order['Closing_Datetime'] = closing_datetime
                         orders[order['Opening_Datetime']] = order
                         order = {}
