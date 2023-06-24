@@ -15,7 +15,7 @@ from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
 ticker = "^GDAXI"
-timeframe = 10 #mins
+timeframe = 15 #mins
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 split_time = pd.Timestamp("2023-03-01", tz='UTC')

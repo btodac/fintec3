@@ -151,4 +151,6 @@ class WeightedTrend(Feature):
     def __call__(self, data):
         trend = data['Close'] - data['Open']
         feature = trend.rolling(self.t_strings[0]).apply(
-            lambda x: np.average(x.wt, weights=x.value))
+            lambda x: np.average(x, weights=np.arange(1,len(x)+1)/len(x))
+            )
+        return feature
