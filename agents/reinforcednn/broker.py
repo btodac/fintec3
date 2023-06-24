@@ -37,7 +37,9 @@ class Broker(object):
     
     def close_position(self,):
         position = self.positions.pop()
-        self.funds += position.current_profit_loss(self.market_data_gen.current_price)
+        pl = position.current_profit_loss(self.market_data_gen.current_price)
+        self.funds += pl
+        return pl
         #return position.current_profit_loss(self.market_data_gen.current_price)
         
     @property
