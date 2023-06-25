@@ -28,7 +28,7 @@ class TrainingParams(object):
         self.gamma_max = 0.9
         self.gamma_interval = (self.gamma_max - self.gamma)
         self.epsilon = 1.0  # Epsilon greedy parameter
-        self.epsilon_min = 0.05  # Minimum epsilon greedy parameter
+        self.epsilon_min = 0.025  # Minimum epsilon greedy parameter
         self.epsilon_max = self.epsilon  # Maximum epsilon greedy parameter
         self.epsilon_interval = (
             self.epsilon_max - self.epsilon_min
@@ -43,9 +43,9 @@ class TrainingParams(object):
         # Maximum replay length
         self.max_memory_length = 1e5
         # Train the model after 4 actions
-        self.update_after_actions = 8
+        self.update_after_actions = 10
         # How often to update the target network
-        self.update_target_network = 5e4 # 100 * self.update_after_actions
+        self.update_target_network = 1e4 # 100 * self.update_after_actions
         # Save every n frames
         self.n_frames_save = 5e4
         
@@ -270,10 +270,12 @@ class Trainer(object):
                 if (frame_count - initiial_frame) > self.params.max_frames:
                     sys.exit()
                 break
+                sys.exit(102)
             state, done = self.env.reset()
             episode_reward = 0
             
             gc.collect()
+            
     
     def make_action(self, frame_count, observation):
         # Use epsilon-greedy for exploration

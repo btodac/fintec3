@@ -18,7 +18,7 @@ ticker = "^GDAXI"
 timeframe = 15 #mins
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
-split_time = pd.Timestamp("2023-03-01", tz='UTC')
+split_time = pd.Timestamp("2022-08-01", tz='UTC')
 training_data = all_data.iloc[ all_data.index.to_numpy() < split_time ]
 validation_data = all_data.iloc[all_data.index.to_numpy() >= split_time]
 

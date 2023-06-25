@@ -250,6 +250,9 @@ class SteeringResults(Results):
                 pass
             
         orders = pd.DataFrame(orders).T
+        max_time = max(data.index.time)
+        is_bad = pd.DatetimeIndex(orders['Closing_Datetime']).time > max_time
+        orders = orders.iloc[np.logical_not(is_bad)]
         orders['Opening_Value'] = data.loc[orders.index,'Close'].to_numpy()
         orders['Closing_Value'] = data.loc[orders['Closing_Datetime'],'Close'].to_numpy()
         ds = orders['Direction'].to_numpy().copy()

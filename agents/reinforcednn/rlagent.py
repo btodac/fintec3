@@ -26,7 +26,7 @@ class RLAgent(object):
         model.add(layers.Flatten())
         for i in range(5):
             model.add(layers.Dense(
-                256, activation='relu',
+                512, activation='relu',
             #                       kernel_constraint=keras.constraints.MaxNorm(max_norm),
                 ))
         model.add(layers.Dense(3, activation='softmax', ))  
