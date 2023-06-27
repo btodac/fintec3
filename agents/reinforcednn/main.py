@@ -28,7 +28,7 @@ from agents.reinforcednn.environment import Env
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
 
-restart = False
+restart = True
 
 if restart:
     with open('finish.txt', 'r') as fh:
@@ -41,8 +41,9 @@ else:
         fh.write(save_file)
 
 columns = [
-    '10min_AvgTrueRange'
-    '10min_Trend','20min_Trend','30min_Trend','40min_Trend',
+    '10min_AvgTrueRange',
+    '10min_WeightedTrend','20min_WeightedTrend','30min_WeightedTrend','40min_WeightedTrend',
+    '60min_WeightedTrend', '120min_WeightedTrend', '240min_WeightedTrend','600min_WeightedTrend',
     '10min_Std',
     '10min_20min_MeanDiff',
     '10min_StochOsc',

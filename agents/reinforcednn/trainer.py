@@ -154,8 +154,8 @@ class Trainer(object):
                 self.load_optimizer_state(model_dir)
             except:
                 raise ValueError(f"If restart is set to True then model_dir must be supplied")
-            #else:
-            #    self.train(**self.training_state.__dict__)
+            else:
+                self.env.broker.market_data_gen._make_new_data()
         else:
             self.rl_agent = rl_agent
             self.model_dir = model_dir
@@ -225,9 +225,9 @@ class Trainer(object):
                     self.save_optimizer_state(training_state)
                     
                 if done:
-                    aw = 0.05
+                    aw = 0.01
                     #wins = wins * (1-aw) + (reward>100) *aw # sum(outcomes) / len(outcomes)
-                    wins = wins * (1-aw) + (self.env.broker.funds > 0) *aw # sum(outcomes) / len(outcomes)
+                    wins = wins * (1-aw) + (self.env.broker.funds > 0) * aw # sum(outcomes) / len(outcomes)
                     outcomes.append(wins)
                     if len(outcomes) > 100000:
                         del outcomes[:1]

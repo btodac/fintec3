@@ -13,14 +13,16 @@ from agents.reinforcednn.marketdata import MarketDataGen
 
 log = logging.getLogger(__name__)
 
-DO_NOTHING_PUNISHMENT = 0.25#1.5#0.25
+DO_NOTHING_PUNISHMENT = 0.1#1.5#0.25
+
+DATA_HISTORY = 50
 
 class Env(object):
     def __init__(self, observer):
         log.info('Starting environment')
         self.market_data_gen = MarketDataGen(observer)
         self.broker = Broker(self.market_data_gen)
-        self.input_data_size = (observer.shape[0] + 30 * 3,)
+        self.input_data_size = (observer.shape[0] + DATA_HISTORY * 3,)
         self._last_action = 2
         self._profit_history = [0]
         self._action_history = [0]
@@ -30,21 +32,19 @@ class Env(object):
 
         if action != self._last_action:
             if self._last_action != 2: # Must be an open order to close
-                pl = self.broker.close_position()
-                score = np.sign(pl)
+                score = self.broker.close_position()
             if action != 2: # open the new order
-                self.broker.open_position(action)
-            
+                self.broker.open_position(action)   
         elif action == 2:
             score = -DO_NOTHING_PUNISHMENT
         #else:
         #    score = min(0, self.broker.current_profit_loss)
                 
-        if self.broker.current_equity > 100:
-            score = 100
+        if self.broker.current_equity > 1000:
+            score = 1000
             done = True
-        elif self.broker.current_equity < -100:
-            score = -100
+        elif self.broker.current_equity < -1000:
+            score = -1000
             done = True
         else:
             #score = min(score,0)
@@ -73,17 +73,17 @@ class Env(object):
     def make_state(self,):
         observation, done = next(self.market_data_gen)
         
-        x = self.market_data_gen.get_data_slice(30)['Open'].to_numpy()
+        x = self.market_data_gen.get_data_slice(DATA_HISTORY)['Open'].to_numpy()
         x -= x[-1]
-        price = np.zeros(30)
+        price = np.zeros(DATA_HISTORY)
         price[-len(x):] = x
         
-        x = np.array(self._profit_history[-30:])
-        profits = np.zeros(30)
+        x = np.array(self._profit_history[-DATA_HISTORY:])
+        profits = np.zeros(DATA_HISTORY)
         profits[-len(x):] = x
     
-        x = np.array(self._action_history[-30:])
-        actions = np.zeros(30)
+        x = np.array(self._action_history[-DATA_HISTORY:])
+        actions = np.zeros(DATA_HISTORY)
         actions[-len(x):] = x
     
         state_next = np.concatenate((observation, price, actions, profits))

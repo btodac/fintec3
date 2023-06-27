@@ -24,7 +24,7 @@ class GBMDataGen(object):
             rho=0.0,
             kappa=0.001,
             theta=0.005,
-            chi=1e-5
+            chi=5e-6
             ):
         if start_date.date() == end_date.date():
             end_date += pd.Timedelta(days=1)
@@ -81,7 +81,7 @@ class GBMDataGen(object):
         
         gmb = np.random.multivariate_normal(mean, cov, size=(n_points))
         v = self.theta # the instantaneous volatility
-        volatility = self.theta * np.ones(n_points)
+        volatility = np.zeros(n_points)
         for i in range(n_points):
             dv = (self.kappa * (self.theta - v) * dt \
                   + self.chi * np.sqrt(v) * gmb[i,1])
@@ -89,8 +89,8 @@ class GBMDataGen(object):
             volatility[i] = v
         
         motion = np.exp(
-            (self.drift - self.volatility**2 / 2) * dt +
-            self.volatility * gmb[:,0].squeeze()
+            (self.drift - volatility**2 / 2) * dt +
+            volatility * gmb[:,0].squeeze()
         )
         return initial_value * motion.cumprod()
     
@@ -124,16 +124,20 @@ if __name__ == "__main__":
     drift = np.log(1 + change) / (511 * 60) # log(1 + R) / (n_points * freq_as_seconds)
     
     data_gen = GBMDataGen(start_date=pd.Timestamp("2023-01-01"),
-                          end_date=pd.Timestamp("2023-01-05"),
+                          end_date=pd.Timestamp("2023-07-01"),
                           freq='1min',
                           initial_value=initial_value,
-                          drift=0,#drift,#0.000000003, # final value = initial_value + (1+drift*nticks*tick_length)
-                          volatility=4e-6,#0.00005,#0.00001, # (daily_std/initial_value)**2 * freq_as_seconds
+                          drift=5e-9,#drift,#0.000000003, # final value = initial_value + (1+drift*nticks*tick_length)
+                          volatility=1e-5,#0.00005,#0.00001, # (daily_std/initial_value)**2 * freq_as_seconds
                           start_time=pd.Timestamp("09:00"),
                           end_time=pd.Timestamp("17:30"),
+                          rho=0.01,
+                          kappa=0.1,
+                          theta=np.random.gamma(1,0.5) * 1e-4,
+                          chi=1e-4
                           )
     df = data_gen.generate()
-    
-    #mpl.plot(df.iloc[:50], type='candle', style='yahoo', title='Data')                     
+    daily_std = df.resample('D').std().mean()
+    mpl.plot(df.iloc[:511], type='candle', style='yahoo', title='Data')                     
     df_rs = data_gen._raw.resample('1W').ohlc()
     mpl.plot(df_rs, type='candle', style='yahoo', title='Data')   

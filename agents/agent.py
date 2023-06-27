@@ -178,7 +178,7 @@ class Agent(object):
         '''
         train_observations, train_targets, _ = self.get_observations_and_targets(training_data)
         val_observations, val_targets, _ = self.get_observations_and_targets(validation_data)
-        self.model.fit(train_observations, train_targets, (val_observations, val_targets))
+        return self.model.fit(train_observations, train_targets, (val_observations, val_targets))
                    
     def __call__(self, data: pd.DataFrame) -> str:
         '''
@@ -256,7 +256,7 @@ class Agent(object):
         if data.index.tz != self._params['tz']:
             data.index = data.index.tz_convert(self._params['tz'])
         observations, order_datetimes = self.observer.make_observations(
-            data,self._opening_time, self._closing_time, self._params['tz']
+            data, self._opening_time, self._closing_time, self._params['tz']
            )
         targets = self.target_generator.get_targets(data, order_datetimes)
         return observations, targets, order_datetimes

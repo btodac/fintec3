@@ -33,9 +33,11 @@ class BayesModel(object):
         None.
 
         '''
+        # From init
         self._columns = columns
         self.dist_functions = self._create_model(columns)
         
+        # State
         self._is_fit = False
         self.priors = None
         self.distributions = None
@@ -45,7 +47,7 @@ class BayesModel(object):
         for c in columns:
             f = c.split('_')[-1].lower()
             if f in ['kurt','mean','meandist','meandiff',
-                     'median','mom','skew','trend',]:
+                     'median','mom','skew','trend','weightedtrend']:
                 dists[c] = stats.nct
             elif f == 'High':
                 dists[c] = stats.truncexpon

@@ -135,7 +135,37 @@ class OrderBasedTargetGen(object):
             is_hold = np.logical_not(np.logical_or(is_buy, is_sell))
         probs = np.stack((is_buy, is_sell, is_hold)).T
         return probs
+
+class WTrendBasedGenerator(object):
+    def __init__(self, ticker, take_profit=50, time_limit=60, min_trend=1.0):
+        self.ticker = ticker
+        self.time_limit = time_limit
+        self.min_trend = min_trend
+        
+    def get_targets(self, data, order_datetimes,):
+        from agents.featurefunctions import WeightedTrend
+        t_string = f"{self.time_limit}min"
+        tgen = WeightedTrend([t_string])
+        trend = tgen(data)
+        valid_trend = np.zeros_like(trend.to_numpy())
+        valid_trend[trend.to_numpy() > self.min_trend] = 1
+        valid_trend[trend.to_numpy() < -self.min_trend] = -1
+        # find changes in valid_trend
+        changes = np.concatenate((np.array([True]), np.diff(valid_trend) != 0))
+        
+        
+        trend['gt'] = abs(trend.to_numpy()) > self.min_trend
+        trend['sign'] = np.sign(trend[self.ticker])
+        trend['open'] = data['Open']
+        trend['low'] = data['Low'].iloc[::-1].rolling(t_string,).min().iloc[::-1] - data['Open']
+        trend['high'] = data['High'].iloc[::-1].rolling(t_string).max().iloc[::-1] - data['Open']
+        trend['sell'] = trend['low'] < -self.take_profit and trend[self.ticker]
+        self.trend = trend
+        #data.index.get_indexer(order_datetimes)
+        
+        
     
+
 class TargetGenerator(object):
     def __init__(self, conditions: dict):
         

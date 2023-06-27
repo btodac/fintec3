@@ -14,8 +14,8 @@ from agenttesting.results import Results
 from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
-save_model = False
-ticker = "^NDX"
+save_model = True
+ticker = "^GDAXI"
 ndx_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
@@ -31,7 +31,7 @@ gdaxi_params = {
     'take_profit': 40,#10
     'stop_loss': 5, #10
     'time_limit': 5,#5,
-    'live_tp': 30,
+    'live_tp': 40,
     'live_sl': 10,
     'live_tl': 10,#np.inf,
     'up' : 20,
@@ -45,15 +45,11 @@ elif ticker == "^GDAXI":
 # Observation parameters
 #'''
 columns = [
-    #'Range',
-    #'16min_AvgTrueRange','32min_AvgTrueRange',
-    #'Median', '2min_Median','4min_Median','8min_Median','16min_Median',
-    #'Mom',
     '2min_Mom','4min_Mom',#'8min_MeanDist','16min_MeanDist',#'32min_MeanDist','64min_MeanDist',
-    #'128min_MeanDist','256min_MeanDist','512min_MeanDist',
-    '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
-    '128min_Trend','256min_Trend','512min_Trend',
-    #'10min_Std','30min_Std',
+    '2min_WeightedTrend','4min_WeightedTrend','8min_WeightedTrend','16min_WeightedTrend',
+    '32min_WeightedTrend','64min_WeightedTrend','128min_WeightedTrend','256min_WeightedTrend',
+    '512min_WeightedTrend',
+    '10min_Std',#'30min_Std',
     #'10min_Skew','30min_Skew',
     '10min_20min_MeanDiff','20min_40min_MeanDiff',#'40min_80min_MeanDiff',
     '10min_StochOsc',
@@ -76,7 +72,7 @@ columns = [
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 #'''
-split_time = pd.Timestamp("2023-03-01", tz='UTC')
+split_time = pd.Timestamp("2022-10-01", tz='UTC')
 training_data = all_data.iloc[ all_data.index.to_numpy() < split_time ]
 '''
 start_time = pd.Timestamp.now().normalize() - pd.Timedelta(weeks=40)
@@ -102,7 +98,7 @@ training_data = training_data.tz_convert(tz)
 validation_data = validation_data.tz_convert(tz)
 #training_data = training_data.asfreq('5S')
 #validation_data = validation_data.asfreq('5S')
-training_data = training_data.between_time("10:00", '17:30')
+training_data = training_data.between_time("09:00", '17:30')
 #validation_data = validation_data.between_time("09:30", '11:30')
 #training_data = training_data.between_time("11:30", '16:00')
 #validation_data = validation_data.between_time("11:30", '16:00')

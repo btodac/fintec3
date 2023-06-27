@@ -8,14 +8,14 @@ Created on Thu May  4 10:40:34 2023
 
 import pandas as pd
 
-from agents.nnagent import NNAgent
+from agents.agent import Agent
 from agenttesting.results import Results
 from agents.preprocessing import ObservationBuilder
 from agents.targetgenerators import TrendBasedTargetGen, VelocityBasedTargetGen
 from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
-save_model = False
+save_model = True
 ticker = "^GDAXI"
 # Observation parameters
 columns = [
@@ -32,8 +32,9 @@ columns = [
         '2min_Mom', '4min_Mom', '8min_Mom','16min_Mom','32min_Mom','64min_Mom',
         '8min_MeanDist','16min_MeanDist',#'32min_MeanDist','64min_MeanDist',
         #'128min_MeanDist','256min_MeanDist','512min_MeanDist',
-        '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
-        '128min_Trend','256min_Trend','512min_Trend',
+        '2min_WeightedTrend','4min_WeightedTrend','8min_WeightedTrend',
+        '16min_WeightedTrend','32min_WeightedTrend','64min_WeightedTrend',
+        '128min_WeightedTrend','256min_WeightedTrend','512min_WeightedTrend',
         #'10min_Std',#'15min_Std','30min_Std',#'60min_Std','120min_Std',#'240min_Std','480min_Std',
         #'10min_Skew',#'15min_Skew','30min_Skew',#'60min_Skew','120min_Skew',#'240min_Skew','480min_Skew',
         #'10min_Kurt','20min_Kurt','40min_Kurt',
@@ -41,15 +42,16 @@ columns = [
         '10min_StochOsc',
         #'10min_StochOsc',#'20min_StochOsc','40min_StochOsc',
     ]
-#'''
+'''
 columns = [
     '2min_High','4min_High','8min_High','16min_High','32min_High','64min_High','128min_High',
     '2min_Low','4min_Low','8min_Low','16min_Low','32min_Low','64min_Low','128min_Low',
     'Mom','2min_Mom', '4min_Mom', '8min_Mom','16min_Mom','32min_Mom','64min_Mom',
     '8min_MeanDist','16min_MeanDist','32min_MeanDist','64min_MeanDist',
     '128min_MeanDist','256min_MeanDist','512min_MeanDist',
-    '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
-    '128min_Trend','256min_Trend','512min_Trend',
+    '2min_WeightedTrend','4min_WeightedTrend','8min_WeightedTrend',
+    '16min_WeightedTrend','32min_WeightedTrend','64min_WeightedTrend',
+    '128min_WeightedTrend','256min_WeightedTrend','512min_WeightedTrend',
     'AvgTrueRange','2min_AvgTrueRange','4min_AvgTrueRange','8min_AvgTrueRange',
     '16min_AvgTrueRange','32min_AvgTrueRange',
     #'10min_Std','15min_Std','30min_Std','60min_Std','120min_Std',#'240min_Std','480min_Std',
@@ -58,7 +60,7 @@ columns = [
     '8min_16min_MeanDiff','16min_32min_MeanDiff','32min_64min_MeanDiff',
     '8min_StochOsc','16min_StochOsc','32min_StochOsc',
     ]
-#'''
+'''
 '''
 columns = [
     'AvgTrueRange','2min_AvgTrueRange','4min_AvgTrueRange','8min_AvgTrueRange',
@@ -122,25 +124,25 @@ gdaxi_params = {
     'live_tp': 40,
     'live_sl': 5,
     'live_tl': 10,#np.inf,
-    'up' : 15,
-    'down' : -15,
-    'to' : 15,
+    'up' : 3,
+    'down' : -3,
+    'to' : 1,
     }
 if ticker == "^GDAXI":
     params = gdaxi_params
 elif ticker == "^NDX":
     params = ndx_params
 
-observer = ObservationBuilder(columns, back_features=(6,5))
+observer = ObservationBuilder(columns, back_features=(5,1))
 target_generator = TrendBasedTargetGen(params['up'], 
                                        params['down'], 
                                        params['to'],
-                                       up_down_ratio=0.5)
-model = NNAgent(ticker, columns, params=params, observer=observer, 
-                target_generator=target_generator)
-history = model.fit(training_data, validation_data)
+                                       up_down_ratio=0.6)
+agent = Agent(ticker, columns, model="nn", params=params, 
+              target_generator=target_generator, observer=observer)
+history = agent.fit(training_data, validation_data)
 
-predictions, probabilities, order_datetimes = model.predict(validation_data)
+predictions, probabilities, order_datetimes = agent.predict(validation_data)
 '''
 p_half = probabilities>0.5
 is_trade = p_half.any(axis=1)
@@ -154,9 +156,9 @@ results = Results(pred_half, odt_half, ticker,
                     )
 '''
 results = Results(predictions, order_datetimes, ticker,
-                    take_profit=model._params['live_tp'],
-                    stop_loss=model._params['live_sl'],
-                    time_limit=model._params['live_tl'],
+                    take_profit=agent._params['live_tp'],
+                    stop_loss=agent._params['live_sl'],
+                    time_limit=agent._params['live_tl'],
                     data=validation_data,
                     )
 #'''
@@ -177,7 +179,7 @@ if save_model:
     model_dir = '/home/mtolladay/Documents/finance/NNmodels/' + model_name + '/' 
     os.makedirs(model_dir)
     with open(model_dir + 'model.pkl', 'wb') as f:
-        pickle.dump(model, f, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(agent, f, protocol=pickle.HIGHEST_PROTOCOL)
     with open(model_dir + 'results.pkl', 'wb') as f:
         pickle.dump(results, f, protocol=pickle.HIGHEST_PROTOCOL)
     print('##########################################################################')

@@ -5,11 +5,14 @@ Created on Thu Mar  2 11:26:38 2023
 
 @author: mtolladay
 """
-
+import logging
 import numpy as np
 import pandas as pd
 
 from agenttesting.datagenerator import GBMDataGen
+
+log = logging.getLogger(__name__)
+
 
 class MarketDataGen(object):
     def __init__(self, observer):
@@ -23,6 +26,10 @@ class MarketDataGen(object):
             freq = '1min', 
             start_time = pd.Timestamp("09:00"),
             end_time = pd.Timestamp("17:30"),
+            rho=0.01,
+            kappa=0.1,
+            drift=0,
+            theta=1e-4,
             )
         
         self._make_new_data()
@@ -53,14 +60,16 @@ class MarketDataGen(object):
         return float(self.data['Close'].iloc[self._counter-1])
     
     def _make_new_data(self,):
-        self._data_gen.drift = np.random.normal(scale=3) * 1e-9
-        self._data_gen.volatility = np.random.gamma(5,1) * 1e-5
+        #self._data_gen.drift = np.random.normal(scale=0.1) * 1e-9
+        self._data_gen.theta = np.random.gamma(8,1/8) * 1e-4
         try:
             self._data_gen.initial_value = self.data['Close'].iloc[-1]
         except AttributeError:
             self._data_gen.initial_value = 13000
             
         self.data = self._data_gen.generate()
+        log.info(f"Total std = {self.data['Close'].std()}, "\
+                 f"daily std = {self.data['Close'].resample('D').std().mean()}")
         self.observations, _  = self.observer.make_observations(
             self.data,
             self._data_gen.start_time,
