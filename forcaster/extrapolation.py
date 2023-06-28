@@ -15,7 +15,7 @@ from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
 ticker = "^GDAXI"
-timeframe = 64 #mins
+timeframe = 15 #mins
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 split_time = pd.Timestamp("2023-06-01", tz='UTC')
@@ -51,7 +51,42 @@ trend = t(training_data)
 
 wt = WeightedTrend([t_string])
 weighted_trend = wt(training_data)
+orders = []
+for date in np.unique(weighted_trend.index.date):
+    index = training_data.index.date == date
+    open_trade = np.sign(weighted_trend.iloc[index])
+    open_trade = (open_trade.to_numpy()[1:] - open_trade.to_numpy()[:-1]).squeeze()
+    trend_grad = np.diff(weighted_trend.iloc[index].to_numpy().squeeze())
+    tgs = np.sign(trend_grad)
+    close_trade = tgs[1:] - tgs[:-1]
+    closing_datetimes = training_data.iloc[index].index[np.where(close_trade==-2)[0]+2]
+    buys = pd.DataFrame()
+    buys['Opening_datetime'] = training_data.iloc[index].index[np.where(open_trade==2)[0] + 1]
+    buys['Closing_datetime'] = [closing_datetimes[np.where(closing_datetimes > odt)[0][0]] \
+                                 for odt in buys['Opening_datetime']]
+    buys['Opening_price'] = training_data.loc[buys.Opening_datetime,'Close'].to_numpy()
+    buys['Closing_price'] = training_data.loc[buys.Closing_datetime,'Close'].to_numpy()
+    buys['Profit'] = buys.Closing_price - buys.Opening_price - 1.2
+    
+    closing_datetimes = training_data.iloc[index].index[np.where(close_trade==2)[0]+2]
+    sells = pd.DataFrame()
+    sells['Opening_datetime'] = training_data.iloc[index].index[np.where(open_trade==-2)[0] + 1]
+    sells['Closing_datetime'] = [closing_datetimes[np.where(closing_datetimes > odt)[0][0]] \
+                                 for odt in sells['Opening_datetime']]
+    sells['Opening_price'] = training_data.loc[sells.Opening_datetime,'Close'].to_numpy()
+    sells['Closing_price'] = training_data.loc[sells.Closing_datetime,'Close'].to_numpy()
+    sells['Profit'] = sells.Opening_price - sells.Closing_price - 1.2
+    
+    buys['Direction'] = 'BUY'
+    sells['Direction'] = 'SELL'
+    orders.append(buys)
+    orders.append(sells)
+    
+orders = pd.concat(orders)
+orders.index = orders.Opening_datetime
+orders = orders.sort_index()
 
+plt.plot(orders.Profit.cumsum())
 #plt.plot(linreg.iloc[:500])
 #plt.plot(trend.iloc[:500])
 '''

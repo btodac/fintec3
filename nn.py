@@ -28,6 +28,7 @@ columns = [
         '15min_Std','30min_Std','60min_Std','120min_Std',#'240min_Std','480min_Std',
         '15min_Skew','30min_Skew','60min_Skew','120min_Skew',#'240min_Skew','480min_Skew',
     ]
+'''
 columns = [
         #'2min_Mom', '4min_Mom', '8min_Mom','16min_Mom','32min_Mom','64min_Mom',
         #'8min_MeanDist','16min_MeanDist',#'32min_MeanDist','64min_MeanDist',
@@ -42,6 +43,7 @@ columns = [
         '10min_StochOsc',
         #'10min_StochOsc',#'20min_StochOsc','40min_StochOsc',
     ]
+'''
 '''
 columns = [
     '2min_High','4min_High','8min_High','16min_High','32min_High','64min_High','128min_High',
@@ -121,12 +123,12 @@ gdaxi_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
     'time_limit': 30,#5,
-    'live_tp': 20,
+    'live_tp': 30,
     'live_sl': 10,
-    'live_tl': 2,#np.inf,
-    'up' : 10,
-    'down' : -10,
-    'to' : 5,
+    'live_tl': 10,#np.inf,
+    'up' : 20,
+    'down' : -20,
+    'to' : 10,
     }
 if ticker == "^GDAXI":
     params = gdaxi_params
@@ -137,7 +139,7 @@ observer = ObservationBuilder(columns, back_features=(5,1))
 target_generator = TrendBasedTargetGen(params['up'], 
                                        params['down'], 
                                        params['to'],
-                                       up_down_ratio=0.7)
+                                       up_down_ratio=0.5)
 agent = Agent(ticker, columns, model="nn", params=params, 
               target_generator=target_generator, observer=observer)
 history = agent.fit(training_data, validation_data)
