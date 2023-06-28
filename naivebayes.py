@@ -33,10 +33,10 @@ gdaxi_params = {
     'time_limit': 5,#5,
     'live_tp': 40,
     'live_sl': 10,
-    'live_tl': 10,#np.inf,
-    'up' : 20,
-    'down' : -20,
-    'to' : 10,
+    'live_tl': 3,#np.inf,
+    'up' : 4,
+    'down' : -4,
+    'to' : 3,
     }
 if ticker == "^NDX":
     params = ndx_params

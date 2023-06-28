@@ -49,7 +49,11 @@ class AvgTrueRange(Feature):
             
         feature = self.normalise(feature, data['Close'])
         return feature
-   
+
+class Close(Feature):
+    def __call__(self, data,):
+        return data['Close']
+
 class High(Feature):
     def __call__(self, data,):
         feature = data['High'].rolling(self.t_strings[0]).max()

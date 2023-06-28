@@ -57,11 +57,18 @@ class TrendBasedTargetGen(object):
         prices = data['Close']
         order_index = prices.index.get_indexer(order_datetimes)
         indx_i = order_index[:,np.newaxis]
-        indx_r = np.arange(self.time_limit)[np.newaxis,:]
+        indx_r = np.arange(self.time_limit)[np.newaxis,:] + 1
         index = indx_i + indx_r
         p = prices.to_numpy()
         traces = p[index].squeeze()
-        zeroing = traces[:,0][:,np.newaxis]
+        try:
+            zeroing = traces[:,0][:,np.newaxis]
+        except IndexError as ie:
+            if traces.ndim == 1:
+                traces = traces[:,np.newaxis]
+                zeroing = traces[:,0][:,np.newaxis]
+            else:
+                raise ie
         traces = (traces - zeroing) / zeroing
         ups = self.up / zeroing
         downs = self.down / zeroing # NOTE: downs must be negative!

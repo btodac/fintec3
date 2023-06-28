@@ -115,23 +115,6 @@ class Agent(object):
         None.
 
         '''
-        if hasattr(model, 'make_prediction') and hasattr(model, 'fit'):
-            self.model = model
-        elif type(model) is str:
-            if model.lower() == "bayes":
-                from agents.bayesmodel import BayesModel
-                self.model = BayesModel(columns)
-            elif model.lower() == "nn":
-                from agents.nnmodel import NNModel
-                self.model = NNModel()
-            else:
-                raise ValueError('Unrecognised model string, must be one of "bayes"/"nn"')
-        else:
-            raise ValueError('The model argument must be either a string ("bayes"/"nn") '
-                                 'or be a valid model class with "make_prediction" and '
-                                 '"fit" methods')
-            
-        
         self._params = {
             'ticker': ticker,
             'columns': columns,
@@ -159,6 +142,25 @@ class Agent(object):
         else:
             self.target_generator = target_generator
     
+    
+        if hasattr(model, 'make_prediction') and hasattr(model, 'fit'):
+            self.model = model
+        elif type(model) is str:
+            if model.lower() == "bayes":
+                from agents.bayesmodel import BayesModel
+                self.model = BayesModel(columns)
+            elif model.lower() == "nn":
+                from agents.nnmodel import NNModel
+                self.model = NNModel(self.observer.shape, 3) ###TODO: target generators need a shape!
+            else:
+                raise ValueError('Unrecognised model string, must be one of "bayes"/"nn"')
+        else:
+            raise ValueError('The model argument must be either a string ("bayes"/"nn") '
+                                 'or be a valid model class with "make_prediction" and '
+                                 '"fit" methods')
+            
+        
+        
     def fit(self, training_data: pd.DataFrame, 
             validation_data: pd.DataFrame):
         '''

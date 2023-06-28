@@ -242,6 +242,7 @@ class OutcomeSimulator(object):
         time_limits = orders.loc[:,'Time_Limit'].to_numpy()
         tickers = orders.loc[:,'Ticker'].to_numpy()
         order_types = orders.loc[:,'Direction'].to_numpy()
+        # groupby???
         for ticker in np.unique(tickers):
             is_ticker = tickers == ticker
             for time_limit in np.unique(time_limits):
@@ -298,7 +299,7 @@ class OutcomeSimulator(object):
         r = np.arange(time_limit)[:,np.newaxis] # columnwise range 0 -> timelimit
         indx = order_indx + 1 + r # +1 as order starts at index close value 
         comparator = df[comparator_name].to_numpy().squeeze() # Comparison data
-        indx[indx>=len(comparator)] = len(comparator) - 1 
+        indx[indx>=len(comparator)] = len(comparator) - 1 # limit to the end of day
         comparator = comparator[indx] # Comparison matrix (n_timesteps,max_orders)
         is_ineq = comparator_func(x, comparator, price_delta) # boolean array
         rel_indx = np.argmax(is_ineq, axis=0) # int index relative to order start
