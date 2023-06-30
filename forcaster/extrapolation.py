@@ -54,28 +54,54 @@ weighted_trend = wt(training_data)
 orders = []
 for date in np.unique(weighted_trend.index.date):
     index = training_data.index.date == date
+
     open_trade = np.sign(weighted_trend.iloc[index])
     open_trade = (open_trade.to_numpy()[1:] - open_trade.to_numpy()[:-1]).squeeze()
+    
+    
     trend_grad = np.diff(weighted_trend.iloc[index].to_numpy().squeeze())
     tgs = np.sign(trend_grad)
     close_trade = tgs[1:] - tgs[:-1]
+    
+    opening_datetime = training_data.iloc[index].index[np.where(open_trade==2)[0] + 1]
+    opening_datetime = pd.DatetimeIndex(
+        opening_datetime.to_numpy()[
+            np.logical_not(
+                pd.DatetimeIndex(opening_datetime) == training_data.iloc[index].index.max()
+                )
+            ]
+        )
     closing_datetimes = training_data.iloc[index].index[np.where(close_trade==-2)[0]+2]
+    closing_datetimes = closing_datetimes.to_list()
+    closing_datetimes.append( training_data.iloc[index].index.max() )
+    closing_datetimes = pd.DatetimeIndex(np.unique(closing_datetimes))
     buys = pd.DataFrame()
-    buys['Opening_datetime'] = training_data.iloc[index].index[np.where(open_trade==2)[0] + 1]
+    buys['Opening_datetime'] = opening_datetime
     buys['Closing_datetime'] = [closing_datetimes[np.where(closing_datetimes > odt)[0][0]] \
                                  for odt in buys['Opening_datetime']]
     buys['Opening_price'] = training_data.loc[buys.Opening_datetime,'Close'].to_numpy()
     buys['Closing_price'] = training_data.loc[buys.Closing_datetime,'Close'].to_numpy()
-    buys['Profit'] = buys.Closing_price - buys.Opening_price - 1.2
+    buys['Profit'] = buys.Closing_price - buys.Opening_price #- 1.2
     
+    opening_datetime = training_data.iloc[index].index[np.where(open_trade==-2)[0] + 1]
+    opening_datetime = pd.DatetimeIndex(
+        opening_datetime.to_numpy()[
+            np.logical_not(
+                pd.DatetimeIndex(opening_datetime) == training_data.iloc[index].index.max()
+                )
+            ]
+        )
     closing_datetimes = training_data.iloc[index].index[np.where(close_trade==2)[0]+2]
+    closing_datetimes = closing_datetimes.to_list()
+    closing_datetimes.append( training_data.iloc[index].index.max() )
+    closing_datetimes = pd.DatetimeIndex(np.unique(closing_datetimes))
     sells = pd.DataFrame()
-    sells['Opening_datetime'] = training_data.iloc[index].index[np.where(open_trade==-2)[0] + 1]
+    sells['Opening_datetime'] = opening_datetime
     sells['Closing_datetime'] = [closing_datetimes[np.where(closing_datetimes > odt)[0][0]] \
                                  for odt in sells['Opening_datetime']]
     sells['Opening_price'] = training_data.loc[sells.Opening_datetime,'Close'].to_numpy()
     sells['Closing_price'] = training_data.loc[sells.Closing_datetime,'Close'].to_numpy()
-    sells['Profit'] = sells.Opening_price - sells.Closing_price - 1.2
+    sells['Profit'] = sells.Opening_price - sells.Closing_price #- 1.2
     
     buys['Direction'] = 'BUY'
     sells['Direction'] = 'SELL'
@@ -86,7 +112,23 @@ orders = pd.concat(orders)
 orders.index = orders.Opening_datetime
 orders = orders.sort_index()
 
+for index, order in orders.iterrows():
+    start = index + pd.Timedelta(minutes=1)
+    orders.loc[index,'Min'] = (training_data.Low[start : order.Closing_datetime]).to_numpy().min()
+    orders.loc[index,'Max'] = (training_data.High[start : order.Closing_datetime]).to_numpy().max()
+
+orders.Profit -= 1.2
+
+
 plt.plot(orders.Profit.cumsum())
+
+t = np.arange(9,18,0.5)
+indx = np.digitize([c.hour + c.minute/60 for c in orders.index.time], bins=t)
+p = np.zeros(len(t))
+for i in np.unique(indx):
+    p[i-1] = np.mean(orders.Profit.iloc[indx == i])
+    _ = plt.bar(t+0.25, p, width=0.5,
+            color=[['red', 'blue'][i] for i in (p > 0)])
 #plt.plot(linreg.iloc[:500])
 #plt.plot(trend.iloc[:500])
 '''
