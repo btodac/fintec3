@@ -58,14 +58,17 @@ position_manager = PositionManager(account.acc_number, ig_manager.open_fcn, ig_m
 agents = []
 for ticker in tickers:
     if ticker == "^GDAXI":
-        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_GDAXI_U1RDCU/model.pkl'
+        #filename = '/home/mtolladay/Documents/finance/NBmodels/NB_GDAXI_U1RDCU/model.pkl'
+        filename = '/home/mtolladay/Documents/finance/NNmodels/NN_GDAXI_PRXFLZ/model.pkl'
     elif ticker == '^NDX':
-        filename = '/home/mtolladay/Documents/finance/NBmodels/NB_NDX_SLNF0H/model.pkl' #NB_NDX_ABDRVK
+        #filename = '/home/mtolladay/Documents/finance/NBmodels/NB_NDX_SLNF0H/model.pkl' #NB_NDX_ABDRVK
+        filename = '/home/mtolladay/Documents/finance/NNModels/NN_NDX_6XG91T/model.pkl'
+
         
     with open(filename,'rb') as f:
         model = pickle.load(f)
 
-    model._params['stop_loss'] = 5
+    #model._params['stop_loss'] = 5
     #model._params['time_limit'] = 20
     agent = MarketAgent(model, position_manager, account_type, ig_manager.backfill_fcn,
                   ig_manager.get_details_fcn,

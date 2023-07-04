@@ -144,7 +144,7 @@ class OrderBasedTargetGen(object):
         return probs
 
 class WTrendBasedGenerator(object):
-    def __init__(self, ticker, take_profit=50, time_limit=60, min_trend=1.0):
+    def __init__(self, ticker, take_profit=50, time_limit=20, min_trend=1.0):
         self.ticker = ticker
         self.time_limit = time_limit
         self.min_trend = min_trend

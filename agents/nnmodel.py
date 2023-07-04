@@ -67,7 +67,7 @@ class NNModel(object):
         # Loss fcn
         self.loss_fcn_args = {
             "from_logits" : False,
-            "label_smoothing" : 0.025,
+            "label_smoothing" : 0.01,
             "axis" : -1,
             "reduction" : "auto", 
             "name" : "crossentropy",

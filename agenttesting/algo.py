@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 from agents.featurefunctions import Trend, WeightedTrend
 from agenttesting.results import SteeringResults
+from agenttesting.summary import summarise_outcomes
 from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
@@ -18,7 +19,7 @@ ticker = "^GDAXI"
 
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
-split_time = pd.Timestamp("2023-06-01", tz='UTC')
+split_time = pd.Timestamp("2023-07-01", tz='UTC')
 training_data = all_data.iloc[ all_data.index.to_numpy() < split_time ]
 validation_data = all_data.iloc[all_data.index.to_numpy() >= split_time]
 
@@ -76,7 +77,7 @@ for timeframe in range(15,30): #mins
     orders.index = orders.Opening_datetime
     orders = orders.sort_index()
     
-    stop_loss = 6
+    stop_loss = 10
     
     for index, order in orders.iterrows():
         start = index + pd.Timedelta(minutes=1)
@@ -94,13 +95,10 @@ for timeframe in range(15,30): #mins
     orders.loc[orders.index[(orders.Profit < -stop_loss).to_numpy()],'Profit'] = -stop_loss
     
     orders.Profit -= 1.2
-    pf = -sum(orders.Profit[orders.Profit > 0].to_numpy())\
-        / sum(orders.Profit[orders.Profit < 0].to_numpy())
-    avg = orders.Profit.mean()
-    t = (orders.index[-1] - orders.index[0])
-    weeks = np.ceil(t.ceil('D').days/7)
-    r = {'T' : timeframe, 'PF' : pf, 'Avg' : avg, "Trades/Week" : len(orders) / weeks}
-    results.append(r)
+    
+    summary = summarise_outcomes(orders)
+    results.append(summary)
+    
     fig, ax = plt.subplots()
     ax.set_title(f"Timeframe {t_string}")
     plt.plot(orders.Profit.cumsum())

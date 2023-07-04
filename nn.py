@@ -19,59 +19,13 @@ save_model = True
 ticker = "^GDAXI"
 # Observation parameters
 columns = [
-        'Range', 'Mom',
-        '2min_Mom', '4min_Mom',
-        '8min_MeanDist','16min_MeanDist','32min_MeanDist','64min_MeanDist',
-        '128min_MeanDist','256min_MeanDist','512min_MeanDist',
-        '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend','64min_Trend',
-        '128min_Trend','256min_Trend','512min_Trend',
-        '15min_Std','30min_Std','60min_Std','120min_Std',#'240min_Std','480min_Std',
-        '15min_Skew','30min_Skew','60min_Skew','120min_Skew',#'240min_Skew','480min_Skew',
+        '10min_AvgTrueRange',
+        '20min_WeightedTrend', '10min_WeightedTrend'
+        '10min_Std',
+        '10min_20min_MeanDiff',
+        '15min_StochOsc',
     ]
-'''
-columns = [
-        #'2min_Mom', '4min_Mom', '8min_Mom','16min_Mom','32min_Mom','64min_Mom',
-        #'8min_MeanDist','16min_MeanDist',#'32min_MeanDist','64min_MeanDist',
-        #'128min_MeanDist','256min_MeanDist','512min_MeanDist',
-        '2min_WeightedTrend','4min_WeightedTrend','8min_WeightedTrend',
-        '16min_WeightedTrend','32min_WeightedTrend','64min_WeightedTrend',
-        '128min_WeightedTrend','256min_WeightedTrend','512min_WeightedTrend',
-        #'10min_Std',#'15min_Std','30min_Std',#'60min_Std','120min_Std',#'240min_Std','480min_Std',
-        #'10min_Skew',#'15min_Skew','30min_Skew',#'60min_Skew','120min_Skew',#'240min_Skew','480min_Skew',
-        #'10min_Kurt','20min_Kurt','40min_Kurt',
-        '10min_20min_MeanDiff','20min_40min_MeanDiff',#'40min_80min_MeanDiff',
-        '10min_StochOsc',
-        #'10min_StochOsc',#'20min_StochOsc','40min_StochOsc',
-    ]
-'''
-'''
-columns = [
-    '2min_High','4min_High','8min_High','16min_High','32min_High','64min_High','128min_High',
-    '2min_Low','4min_Low','8min_Low','16min_Low','32min_Low','64min_Low','128min_Low',
-    'Mom','2min_Mom', '4min_Mom', '8min_Mom','16min_Mom','32min_Mom','64min_Mom',
-    '8min_MeanDist','16min_MeanDist','32min_MeanDist','64min_MeanDist',
-    '128min_MeanDist','256min_MeanDist','512min_MeanDist',
-    '2min_WeightedTrend','4min_WeightedTrend','8min_WeightedTrend',
-    '16min_WeightedTrend','32min_WeightedTrend','64min_WeightedTrend',
-    '128min_WeightedTrend','256min_WeightedTrend','512min_WeightedTrend',
-    'AvgTrueRange','2min_AvgTrueRange','4min_AvgTrueRange','8min_AvgTrueRange',
-    '16min_AvgTrueRange','32min_AvgTrueRange',
-    #'10min_Std','15min_Std','30min_Std','60min_Std','120min_Std',#'240min_Std','480min_Std',
-    '8min_Skew','16min_Skew','32min_Skew','64min_Skew','128min_Skew',#'240min_Skew','480min_Skew',
-    '8min_Kurt','16min_Kurt','32min_Kurt',
-    '8min_16min_MeanDiff','16min_32min_MeanDiff','32min_64min_MeanDiff',
-    '8min_StochOsc','16min_StochOsc','32min_StochOsc',
-    ]
-'''
-'''
-columns = [
-    'AvgTrueRange','2min_AvgTrueRange','4min_AvgTrueRange','8min_AvgTrueRange',
-    '16min_AvgTrueRange','32min_AvgTrueRange',
-    '2min_Trend','4min_Trend','8min_Trend','16min_Trend','32min_Trend',
-    '64min_Trend','128min_Trend','256min_Trend',
-    '10min_StochOsc','20min_StochOsc','40min_StochOsc',
-    ]
-'''
+
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 split_time = pd.Timestamp("2023-03-01", tz='UTC')
@@ -111,35 +65,35 @@ ndx_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
     'time_limit': 20,#5,
-    'live_tp': 40,
-    'live_sl': 5,
-    'live_tl': 10,#np.inf,
-    'up' : 15,
-    'down' : -15,
-    'to' : 10,
+    'live_tp': 70,
+    'live_sl': 10,
+    'live_tl': 60,#np.inf,
+    'up' : 30,
+    'down' : -30,
+    'to' : 40,
     }
 
 gdaxi_params = {
     'take_profit': 40,#10
     'stop_loss': 10, #10
     'time_limit': 30,#5,
-    'live_tp': 30,
+    'live_tp': 50,
     'live_sl': 10,
-    'live_tl': 10,#np.inf,
-    'up' : 20,
-    'down' : -20,
-    'to' : 10,
+    'live_tl': 60,#np.inf,
+    'up' : 50,
+    'down' : -50,
+    'to' : 60,
     }
 if ticker == "^GDAXI":
     params = gdaxi_params
 elif ticker == "^NDX":
     params = ndx_params
 
-observer = ObservationBuilder(columns, back_features=(5,1))
+observer = ObservationBuilder(columns, back_features=(60,1))
 target_generator = TrendBasedTargetGen(params['up'], 
                                        params['down'], 
                                        params['to'],
-                                       up_down_ratio=0.5)
+                                       up_down_ratio=0.6)
 agent = Agent(ticker, columns, model="nn", params=params, 
               target_generator=target_generator, observer=observer)
 history = agent.fit(training_data, validation_data)

@@ -93,7 +93,8 @@ class IGManager(object):
                                        }
     
     def remove_subscription(self, sub_id):
-        self.ig_stream_service.ls_client.unsubscribe(sub_id)
+        if self.ig_stream_service.ls_client is not None:
+            self.ig_stream_service.ls_client.unsubscribe(sub_id)
         del self._subscriptions[sub_id]
         if len(self._subscriptions) == 0:
             self.stop_stream_service()
