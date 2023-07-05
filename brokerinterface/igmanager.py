@@ -30,6 +30,14 @@ class IGManager(object):
         pass
         #self.stop_stream_service()
         #self.stop_service()
+        
+    def start(self):
+        self.start_service()
+        self.start_stream_service()
+        
+    def stop(self):
+        self.stop_stream_service()
+        self.stop_service()
            
     def start_service(self):
         if self.ig_service is None:

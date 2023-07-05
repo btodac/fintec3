@@ -20,10 +20,11 @@ ticker = "^GDAXI"
 # Observation parameters
 columns = [
         '10min_AvgTrueRange',
-        '20min_WeightedTrend', '10min_WeightedTrend'
-        '10min_Std',
+        '20min_WeightedTrend', '10min_WeightedTrend',
+        #'10min_Std',
         '10min_20min_MeanDiff',
         '15min_StochOsc',
+        '60min_MeanDist',#'120min_MeanDist','240min_MeanDist'
     ]
 
 data_file = Market_Data_File_Handler(dataset_name="all")

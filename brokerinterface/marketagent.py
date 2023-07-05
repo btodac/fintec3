@@ -149,6 +149,9 @@ class MarketAgent(object):
         t = pd.Timestamp.now(tz='UTC')
         return t.time() >= self.opening_time.time() and t.time() < self.closing_time.time()
     
+    @property
+    def subscription(self):
+        return self.market_data_store.data_subscription
     def __del__(self):
         pass
         '''
@@ -174,7 +177,7 @@ class MarketAgent(object):
                                                        name="Agent signal generator")
                 self.signal_generation_thread.start()
                 
-        return self.market_data_store.data_subscription
+        #return self.market_data_store.data_subscription
    
     def stop(self):
         # Clear positions

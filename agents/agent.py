@@ -200,7 +200,8 @@ class Agent(object):
         observations, _ = self.observer.make_observations(data, self._opening_time, 
                                            self._closing_time, self._params['tz'])
         observation = observations[-1, :]
-        pred = np.argmax(self.model.make_prediction(observation))
+        prob = self.model.make_prediction(observation)
+        pred = np.argmax(prob.squeeze())
         return {0: 'BUY', 1: 'SELL', 2: 'HOLD'}[pred]
 
     def predict(self, data: pd.DataFrame,):
@@ -225,8 +226,6 @@ class Agent(object):
             The corresponding datetimes for each prediction
 
         '''
-        if data.index.tz != self._params['tz']:
-            data.index = data.index.tz_convert(self._params['tz'])
         observations, order_datetimes = self.observer.make_observations(
             data, self._opening_time, self._closing_time, self._params['tz']
             )

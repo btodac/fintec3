@@ -103,12 +103,15 @@ class NNModel(object):
         return model
     
     def make_prediction(self, observations):
-        if len(observations.shape) >= 2:
+        if len(observations.shape) == len(self._model.input_shape):
             y = self._model.predict(observations)
-        else:
+        elif len(observations.shape) == len(self._model.input_shape[1:]):
             observation = tf.convert_to_tensor(observations.squeeze())
             observation = tf.expand_dims(observations, 0)
-            y = self._model(observation)
+            y = np.array(self._model(observation))
+        else:
+            raise ValueError(f'Observations had shape {observations.shape} but '\
+                             f'model has input shape of {self._model.input_shape}')
         return y
     
     def fit(self, observations, targets, validation_data):
@@ -139,11 +142,11 @@ class NNModel(object):
         state = self.__dict__.copy()
         if self._is_fit:
             state.update({'weights' : self._model.get_weights(),})
-            return type(self), (self._model.input_shape[1:], self._model.output_shape[-1]), state
+            return type(self), (self._model.input_shape, self._model.output_shape[-1]), state
         else:
             state = self.__dict__.copy()
             del state["_model"]
-            return type(self), (self._model.input_shape[1:], self._model.output_shape[-1]), state
+            return type(self), (self._model.input_shape, self._model.output_shape[-1]), state
         
     def __setstate__(self, state):
         if 'weights' in state.keys():
