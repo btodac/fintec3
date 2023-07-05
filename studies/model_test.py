@@ -15,12 +15,13 @@ from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
 
-filename = '/home/mtolladay/Documents/finance/NNmodels/NN_GDAXI_84L1J9/model.pkl'
-#filename = '/home/mtolladay/Documents/finance/NNmodels/NN_NDX_690CTC/model.pkl'
+filename = '/home/mtolladay/Documents/finance/NNmodels/NN_GDAXI_9U5ES3/model.pkl'
+#filename = '/home/mtolladay/Documents/finance/NNmodels/NN_NDX_TW7UUL/model.pkl'
 with open(filename,'rb') as f:
     model = pickle.load(f)
 
 ticker = model._params['ticker']
+'''
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 split_time = pd.Timestamp("2023-03-01", tz='UTC')
@@ -47,4 +48,4 @@ results.plot_position_profit()
 results.plot_position_distribution()
 results.plot_position_profit_distribution()
 results.plot_weekly_profit()
-
+'''

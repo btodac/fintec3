@@ -59,10 +59,10 @@ agents = []
 for ticker in tickers:
     if ticker == "^GDAXI":
         #filename = '/home/mtolladay/Documents/finance/NBmodels/NB_GDAXI_U1RDCU/model.pkl'
-        filename = '/home/mtolladay/Documents/finance/NNmodels/NN_GDAXI_84L1J9/model.pkl'
+        filename = '/home/mtolladay/Documents/finance/NNmodels/NN_GDAXI_7TX2QK/model.pkl'
     elif ticker == '^NDX':
         #filename = '/home/mtolladay/Documents/finance/NBmodels/NB_NDX_SLNF0H/model.pkl' #NB_NDX_ABDRVK
-        filename = '/home/mtolladay/Documents/finance/NNmodels/NN_NDX_690CTC/model.pkl'
+        filename = '/home/mtolladay/Documents/finance/NNmodels/NN_NDX_92GDFM/model.pkl'
 
         
     with open(filename,'rb') as f:

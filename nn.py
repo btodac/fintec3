@@ -16,15 +16,15 @@ from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
 save_model = True
-ticker = "^GDAXI"
+ticker = "^NDX"
 # Observation parameters
 columns = [
         '10min_AvgTrueRange',
         '20min_WeightedTrend', '10min_WeightedTrend',
         #'10min_Std',
-        '10min_20min_MeanDiff',
+        '10min_20min_MeanDiff', '10min_120min_MeanDist',
         '15min_StochOsc',
-        '60min_MeanDist',#'120min_MeanDist','240min_MeanDist'
+        #'60min_MeanDist',#'120min_MeanDist','240min_MeanDist'
     ]
 
 data_file = Market_Data_File_Handler(dataset_name="all")
@@ -69,9 +69,9 @@ ndx_params = {
     'live_tp': 70,
     'live_sl': 10,
     'live_tl': 60,#np.inf,
-    'up' : 30,
-    'down' : -30,
-    'to' : 40,
+    'up' : 40,
+    'down' : -40,
+    'to' : 50,
     }
 
 gdaxi_params = {
