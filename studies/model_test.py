@@ -15,8 +15,8 @@ from utillities.datastore import Market_Data_File_Handler
 from utillities.timesanddates import get_ticker_time_zone
 
 
-filename = '/home/mtolladay/Documents/finance/NBmodels/NB_NDX_WKS6L6/model.pkl'
-filename = '/home/mtolladay/Documents/finance/NBmodels/NB_GDAXI_BLNH6M/model.pkl'
+#filename = '/home/mtolladay/Documents/finance/NNmodels/NN_GDAXI_84L1J9/model.pkl'
+filename = '/home/mtolladay/Documents/finance/NNmodels/NN_NDX_6XG91T/model.pkl'
 with open(filename,'rb') as f:
     model = pickle.load(f)
 

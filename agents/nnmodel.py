@@ -139,19 +139,19 @@ class NNModel(object):
         state = self.__dict__.copy()
         if self._is_fit:
             state.update({'weights' : self._model.get_weights(),})
-            return type(self), (self._model.input_shape, self._model.output_shape), state
+            return type(self), (self._model.input_shape[1:], self._model.output_shape[-1]), state
         else:
             state = self.__dict__.copy()
             del state["_model"]
-            return type(self),(self._model.input_shape, self._model.output_shape), state
+            return type(self), (self._model.input_shape[1:], self._model.output_shape[-1]), state
         
     def __setstate__(self, state):
         if 'weights' in state.keys():
-            weights = state.pop['weights']
+            weights = state.pop('weights')
         else:
             weights = None
         
         self.__dict__.update(state)
-        self._model = self.create_model(self._model.input_shape, self._model.output_shape)
+        #self._model = self.create_model(self._model.input_shape, self._model.output_shape)
         if weights is not None:
             self._model.set_weights(weights)
