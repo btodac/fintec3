@@ -11,6 +11,7 @@ import json
 import logging
 import pandas as pd
 from trading_ig.lightstreamer import Subscription
+from trading_ig.rest import IGException
 
 log = logging.getLogger(__name__)
 
@@ -93,6 +94,7 @@ class PositionManager(object):
                 now_time = pd.Timestamp.now('UTC')
                 for dealId in list(self.positions.keys()):
                     if now_time > self.positions[dealId]['endtime']:
+                        log.info(f"Closing {dealId} due to timeout")
                         self.close_position(dealId, outcome="timeout/external")
                     
     def position_watcher(self, stream_data):
@@ -130,14 +132,15 @@ class PositionManager(object):
                 log.info(CYAN + f'Deal {dealId} {status} current = {level}' + WHITE)
                 
     def open_position(self, direction, details):
-        if len(self.positions) >= self.n_max_positions:
-            text = PINK + "Unable to open position max positions are active"
-        elif  pd.Timestamp.now('UTC') < self._cooldown_end_time:
-            text = PINK + "Unable to open position, bot in cooldown"
-        else:
-            self._open_position(direction, details)
-            text = GREEN + "Position opened"
-        log.info(text + WHITE)
+        with self._positions_lock:
+            if len(self.positions) >= self.n_max_positions:
+                text = PINK + "Unable to open position max positions are active"
+            elif  pd.Timestamp.now('UTC') < self._cooldown_end_time:
+                text = PINK + "Unable to open position, bot in cooldown"
+            else:
+                self._open_position(direction, details)
+                text = GREEN + "Position opened"
+            log.info(text + WHITE)
         
     def close_position(self, dealId, outcome, data=None):
         log.debug(f'Attempting to close position {dealId} due to {outcome}')
@@ -210,8 +213,7 @@ class PositionManager(object):
                 pos_data.update(details._dict)
                 t_start = pd.Timestamp(pos_data['date']).tz_localize('UTC')
                 pos_data['endtime'] = t_start + pd.Timedelta(minutes=details['time_limit'])
-                with self._positions_lock:
-                    self.positions[pos_data['dealId']] = pos_data
+                self.positions[pos_data['dealId']] = pos_data
             break
         
         log.debug(pos_data)
@@ -234,7 +236,11 @@ class PositionManager(object):
                     session=None,
                 )
                 #print(pos_data)
-            except Exception:
+            except Exception as e:
+                if str(e).find("resp 404") != -1:
+                    success = True
+                    log.info(f'Position {dealId} was not found!')
+                    break
                 #print(traceback.print_exc())
                 i += 1
                 time.sleep(0.2)
