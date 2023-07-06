@@ -39,10 +39,12 @@ class PositionManager(object):
     and mirror changes to OTC positions. 
     '''
     
-    def __init__(self, acc_number, open_fcn, close_fcn, n_max_positions=1):
-        self.open_fcn = open_fcn
-        self.close_fcn = close_fcn
+    def __init__(self, ig_manager, n_max_positions=1):
+        self.open_fcn = ig_manager.open_fcn
+        self.close_fcn = ig_manager.close_fcn
         self.n_max_positions = n_max_positions
+        
+        acc_number = ig_manager.account.acc_number
         
         self._positions_lock = RLock()
         self.positions = {}

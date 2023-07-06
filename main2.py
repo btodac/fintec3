@@ -53,16 +53,16 @@ l.addHandler(ig_handler)
 account = Account(account_name=account_type)
 
 ig_manager = IGManager(account)
-position_manager = PositionManager(account.acc_number, ig_manager.open_fcn, ig_manager.close_fcn)
+#position_manager = PositionManager(account.acc_number, ig_manager.open_fcn, ig_manager.close_fcn)
 
 agents = []
 for ticker in tickers:
     if ticker == "^GDAXI":
         #filename = '/home/mtolladay/Documents/finance/NBmodels/NB_GDAXI_U1RDCU/model.pkl'
-        filename = '/home/mtolladay/Documents/finance/NNmodels/NN_GDAXI_9U5ES3/model.pkl'
+        filename = '/home/mtolladay/Documents/finance/NNmodels/NN_GDAXI_0SZ2UM/model.pkl'
     elif ticker == '^NDX':
         #filename = '/home/mtolladay/Documents/finance/NBmodels/NB_NDX_SLNF0H/model.pkl' #NB_NDX_ABDRVK
-        filename = '/home/mtolladay/Documents/finance/NNmodels/NN_NDX_92GDFM/model.pkl'
+        filename = '/home/mtolladay/Documents/finance/NNmodels/NN_NDX_60QS7X/model.pkl'
 
         
     with open(filename,'rb') as f:
@@ -70,13 +70,19 @@ for ticker in tickers:
 
     model._params['stop_loss'] = 7
     #model._params['time_limit'] = 20
-    agent = MarketAgent(model, position_manager, account_type, ig_manager.backfill_fcn,
-                  ig_manager.get_details_fcn,
-                  size={'live' : 0.5, 'demo' : 1.0}[account_type], cooldown=0, frequency=60)
+    agent = MarketAgent(
+        model, 
+        account_type, 
+        ig_manager.backfill_fcn,
+        ig_manager.get_details_fcn,
+        size={'live' : 0.5, 'demo' : 1.0}[account_type], 
+        cooldown=0, 
+        frequency=60
+        )
     print(agent.details._dict)
     agents.append(agent)
 
-session_manager = SessionManager(agents, position_manager, ig_manager)
+session_manager = SessionManager(agents, ig_manager)
 logging.info("Session starting...")
 
 

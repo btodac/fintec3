@@ -33,16 +33,7 @@ class ObservationBuilder(object):
         data = data.between_time(opening_time.time(), closing_time.time())
         features = self._calculate_features(data)
         if self.back_features is not None:
-            f = []
-            for i in range(self.back_features[0]):
-                t = i * self.back_features[1]
-                dti = features.index - pd.Timedelta(minutes=t)
-                is_nat = dti.time < features.index.time.min()
-                dti = dti.to_series()
-                dti.iloc[is_nat] = pd.NaT
-                dti = dti.bfill()
-                dti = pd.DatetimeIndex(dti)
-                f.append(features.loc[dti,:].to_numpy())
+            f = self._create_back_features(features)
             observations = np.stack(f, axis=2)
         else:
             observations = features.to_numpy()
@@ -54,6 +45,21 @@ class ObservationBuilder(object):
         for column, feature_gen in self._feature_generators.items():
             features.append(feature_gen(data))
         return pd.concat(features, axis=1)
+    
+    def _create_back_features(self, features):
+        features_copy = features.copy()
+        f = []
+        dt = pd.Timedelta(minutes=self.back_features[1])
+        for i in range(self.back_features[0]):
+            dti = features_copy.index - dt
+            is_nat = dti.time < features_copy.index.time.min()
+            dti = dti.to_series()
+            dti.iloc[is_nat] = pd.NaT
+            dti = dti.bfill()
+            dti = pd.DatetimeIndex(dti)
+            features_copy = features.loc[dti,:]
+            f.append(features_copy.to_numpy())
+        return f
         
     def _parse_feature_name(self, column):
         c = column.split('_')

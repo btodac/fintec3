@@ -16,12 +16,12 @@ from utillities.timesanddates import get_ticker_time_zone
 
 
 filename = '/home/mtolladay/Documents/finance/NNmodels/NN_GDAXI_9U5ES3/model.pkl'
-#filename = '/home/mtolladay/Documents/finance/NNmodels/NN_NDX_TW7UUL/model.pkl'
+filename = '/home/mtolladay/Documents/finance/NNmodels/NN_NDX_60QS7X/model.pkl'
 with open(filename,'rb') as f:
     model = pickle.load(f)
 
 ticker = model._params['ticker']
-'''
+
 data_file = Market_Data_File_Handler(dataset_name="all")
 all_data = data_file.get_ticker_data(ticker, as_list=False)
 split_time = pd.Timestamp("2023-03-01", tz='UTC')
@@ -30,6 +30,7 @@ tz = get_ticker_time_zone(ticker) #'^GDAXI'
 validation_data = validation_data.tz_convert(tz)
 
 predictions, probabilities, order_datetimes = model.predict(validation_data)
+'''
 results = Results(predictions, order_datetimes, ticker,
                     take_profit=model._params['live_tp'],
                     stop_loss=model._params['live_sl'],

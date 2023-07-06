@@ -197,8 +197,12 @@ class Agent(object):
             Either "BUY","SELL" or "HOLD"
 
         '''
-        observations, _ = self.observer.make_observations(data, self._opening_time, 
-                                           self._closing_time, self._params['tz'])
+        observations, _ = self.observer.make_observations(
+            data=data, 
+            opening_time=self._opening_time, 
+            closing_time=self._closing_time, 
+            tz=self._params['tz'],
+            )
         observation = observations[-1, :]
         prob = self.model.make_prediction(observation)
         pred = np.argmax(prob.squeeze())

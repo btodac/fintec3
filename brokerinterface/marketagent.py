@@ -112,11 +112,11 @@ class MarketAgent(object):
     available_epics = {'LIVE' : {'^GDAXI' : "IX.D.DAX.IFMM.IP", "^NDX" : "IX.D.NASDAQ.IFS.IP"},
                        'DEMO' : {'^GDAXI' : "IX.D.DAX.IFS.IP", "^NDX" : "IX.D.NASDAQ.IFS.IP"}}
     
-    def __init__(self, model, position_manager, account_type, backfill_fcn, get_details_fcn, 
+    def __init__(self, model, account_type, backfill_fcn, get_details_fcn, 
                  size=0.5, cooldown=5, frequency=60):
         log.debug('Initializing OrderBot9000 for ' + model._params['ticker'])
         self.model = model
-        self.position_manager = position_manager
+        #self.position_manager = position_manager
         self.frequency = frequency # seconds
                
         self.details = MarketDetails(
@@ -161,7 +161,8 @@ class MarketAgent(object):
         self.get_details_fcn = None
         '''
     
-    def start(self):
+    def start(self, position_manager):
+        self.position_manager = position_manager
         # Back fill agent data
         t = pd.Timestamp.now(tz='UTC')
         t_req = min(int(np.floor((t - self.opening_time).total_seconds()/60)), 512)

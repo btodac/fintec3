@@ -8,14 +8,16 @@ Created on Wed May  3 14:20:51 2023
 from threading import Thread, Event
 import logging
 
+from brokerinterface import PositionManager
+
 log = logging.getLogger(__name__)
 
 class SessionManager(object):
 
-    def __init__(self, agents, position_manager, ig_manager):
+    def __init__(self, agents, ig_manager):
         log.debug('Starting session manager')
         self.agents = agents
-        self.position_manager = position_manager
+        self.position_manager = None
         self.ig_manager = ig_manager
         
         self.start()
@@ -38,10 +40,11 @@ class SessionManager(object):
         
     def main_loop(self,):
         # Loops over agents and starts/stops them if in trading hours
+        old_are_agents_active = False
         while not self._stop_session.wait(1):
-            agents_active = self.update_agents()
+            are_agents_active = self.update_agents()
             # Start/Stop position manager
-            if not agents_active:
+            if old_are_agents_active and not are_agents_active:
                 self.stop_position_manager()
                 self.ig_manager.stop()
         
@@ -52,17 +55,15 @@ class SessionManager(object):
     def update_agents(self):
         agents_active = False
         for agent in self.agents:
-            if not agent.is_active and agent.is_in_trading_period:                      
-                agent.start()
+            if not agent.is_active and agent.is_in_trading_period:  
+                if self.position_manager is None:
+                    self.start_position_manager()                    
+                agent.start(self.position_manager)
                 self.ig_manager.add_subscription(
                     agent.subscription, 
                     agent
                     )
-                if self.position_manager.sub_id is None:
-                    self.ig_manager.add_subscription(
-                        self.position_manager.subscription,
-                        self.position_manager
-                        )
+                
             elif agent.is_active and not agent.is_in_trading_period:
                 agent.stop()
                 if agent.sub_id is not None:
@@ -70,6 +71,16 @@ class SessionManager(object):
                     
             agents_active = agents_active or agent.is_active
         return agents_active
+    
+    def start_position_manager(self):
+        if self.position_manager is None:
+            self.position_manager = PositionManager(
+                self.ig_manager,
+                )
+            self.ig_manager.add_subscription(
+                self.position_manager.subscription,
+                self.position_manager,
+                )
         
     def stop_position_manager(self):
         self.position_manager.stop()

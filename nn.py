@@ -37,8 +37,8 @@ tz = get_ticker_time_zone(ticker) #'^GDAXI'
 training_data = training_data.tz_convert(tz)
 validation_data = validation_data.tz_convert(tz)
 training_data = training_data.between_time(
-    #"10:00", "16:00" # NDX
-    "09:30", '17:30' # GDAXI
+    "10:00", "16:00" # NDX
+    #"09:30", '17:30' # GDAXI
     )
 ndx_params = {
     'take_profit': 40,#10
@@ -69,9 +69,9 @@ ndx_params = {
     'live_tp': 70,
     'live_sl': 10,
     'live_tl': 60,#np.inf,
-    'up' : 40,
-    'down' : -40,
-    'to' : 50,
+    'up' : 50,
+    'down' : -50,
+    'to' : 60,
     }
 
 gdaxi_params = {
