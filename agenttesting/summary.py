@@ -47,11 +47,11 @@ def summarise_outcomes(orders: pd.DataFrame) -> pd.DataFrame:
     pt['Profit (day)'] = orders['Profit'].resample('1B',closed='right',label='right').sum().mean()
     pt['Profit (week)'] = orders['Profit'].resample('1W',closed='right',label='right').sum().mean()
     pt['Avg. Profit'] = pt['Profit'] / pt['N_Trades']
-    pt['Avg. Win'] = orders.iloc[orders.loc[:,'Take_Profit_Hit'].to_numpy()].loc[:,'Profit'].mean()
-    pt['Avg. Lose'] = orders.iloc[orders.loc[:,'Stop_Loss_Hit'].to_numpy()].loc[:,'Profit'].mean()
-    pt['Avg. Timeout'] = orders.iloc[orders.loc[:,'Time_Limit_Hit'].to_numpy()].loc[:,'Profit'].mean()
-    profit = orders.iloc[orders.loc[:,'Profit'].to_numpy() > 0].loc[:,'Profit'].sum()
-    loss = orders.iloc[orders.loc[:,'Profit'].to_numpy() < 0].loc[:,'Profit'].sum()
+    pt['Avg. Win'] = orders.Profit()[orders.Profit.to_numpy() > 0].mean()
+    pt['Avg. Lose'] = orders.Profit()[orders.Profit.to_numpy() <= 0].mean()
+    pt['Avg. Timeout'] = orders.Profit[orders.Time_Limit_Hit.to_numpy()].mean()
+    profit = orders.Profit[orders.Profit.to_numpy() > 0].sum()
+    loss = orders.Profit[orders.Profit.to_numpy() < 0].sum()
     pt['Profit Factor'] = (-profit/loss) #.fillna(np.inf)
     
     rp = np.cumsum(orders['Profit'])

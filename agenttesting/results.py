@@ -197,6 +197,83 @@ class Results(object):
         # '/usr/local/texlive/2019/bin/x86_64-linux/pdflatex -synctex=1 -interaction=nonstopmode report.tex'
         pass
 
+class ResultsPlotter(object):
+    
+    def __init__(self, outcomes):
+        self.outcomes = outcomes
+           
+    def plot_profits(self,):
+        fig, ax = plt.subplots()
+        ax.set_title('Profit/Loss')
+        ax.tick_params(axis='x', rotation=90)
+        plt.plot(self.outcomes.Profits.cumsum())
+        plt.show()    
+
+    def plot_position_distribution(self,):
+        self._plot_distribution('Distribution')
+
+    def plot_position_profit_distribution(self):
+        self._plot_distribution('Total p/l distribution')
+
+    def plot_position_profit_distribution_mean(self):
+        self._plot_distribution('Mean p/l distribution')
+
+    def _plot_distribution(self, dist_type):
+        t = [c.hour + c.minute/60 for c in self.outcomes.index.time]
+        edges = self._calculate_edges()
+        fig, ax = plt.subplots()
+        ax.set_title(f'{dist_type}')
+        ax.tick_params(axis='x', rotation=90)
+        if dist_type.lower() == "distribution":
+            _ = plt.hist(t, bins=edges)
+        elif "p/l" in  dist_type.lower():
+            if "total" in dist_type.lower():
+                f = np.sum
+            elif "mean" in dist_type.lower():
+                f = np.mean
+            else:
+                raise ValueError(f"Unkown dist_type: {dist_type}")
+            indx = np.digitize(t, bins=edges)
+            p = np.zeros(len(edges))
+            for i in np.unique(indx):
+                p[i-1] = f(self.outcomes.iloc[indx == i])
+            _ = plt.bar(edges+0.25, p, width=0.5,
+                        color=[['red', 'blue'][i] for i in (p > 0)])
+        else:
+            raise ValueError(f"Unkown dist_type: {dist_type}")
+        plt.show()
+
+    def _calculate_edges(self):
+        tz = get_ticker_time_zone(self.outcomes.Ticker[0])
+        opening_time, closing_time = opening_and_closing_times(self.outcomes.Ticker[0])
+        opening_time = opening_time.tz_convert(tz)
+        closing_time = closing_time.tz_convert(tz)
+        ot = opening_time.time()
+        ct = closing_time.time()
+        edges = np.arange(ot.hour + ot.minute/60,
+                          ct.hour + ct.minute/60,
+                          0.5)
+        return edges
+        
+    def plot_daily_profit(self,):
+        d = self.outcomes['Profit'].cumsum().resample("1B").ohlc()
+        mpl.plot(d, type='candle', style='yahoo', title='Daily P/L')
+        plt.show()
+
+    def plot_weekly_profit(self,):
+        d = self.outcomes['Profit'].cumsum().resample("1W").ohlc()
+        mpl.plot(d, type='candle', style='yahoo', title="Weekly P/L")
+        plt.show()
+
+    def _plot_data(self, data):
+        o = data['Open'].resample('1B').first()
+        h = data['High'].resample('1B').max()
+        l = data['Low'].resample('1B').min()
+        c = data['Close'].resample('1B').last()
+        x = np.concatenate((o.to_numpy(), h.to_numpy(), l.to_numpy(), c.to_numpy()), axis=1)
+        data_daily = pd.DataFrame(x, columns=['Open', 'High', 'Low', 'Close'], index=o.index)
+        mpl.plot(data_daily, type='candle', style='yahoo', title=f'{self.ticker} Daily')
+
 # Steering results methods using model to close orders additionally to standard exit conditions
 class SteeringResults(Results):
 

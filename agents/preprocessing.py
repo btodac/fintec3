@@ -54,8 +54,11 @@ class ObservationBuilder(object):
             dti = features_copy.index - dt
             is_nat = dti.time < features_copy.index.time.min()
             dti = dti.to_series()
-            dti.iloc[is_nat] = pd.NaT
-            dti = dti.bfill()
+            if all(is_nat):
+                dti.iloc[is_nat] = features_copy.index[0]
+            else:
+                dti.iloc[is_nat] = pd.NaT
+                dti = dti.bfill()
             dti = pd.DatetimeIndex(dti)
             features_copy = features.loc[dti,:]
             f.append(features_copy.to_numpy())
@@ -73,3 +76,41 @@ class ObservationBuilder(object):
         else:
             return cls(t_strings)
         
+if __name__ == "__main__":
+    from utillities.datastore import Market_Data_File_Handler
+    from utillities.timesanddates import get_ticker_time_zone
+
+    save_model = True
+    ticker = "^NDX"
+    # Observation parameters
+    columns = [
+            '10min_AvgTrueRange',
+            '20min_WeightedTrend', '10min_WeightedTrend',
+            #'10min_Std',
+            '10min_20min_MeanDiff', '10min_120min_MeanDist',
+            '15min_StochOsc',
+            #'60min_MeanDist',#'120min_MeanDist','240min_MeanDist'
+        ]
+
+    data_file = Market_Data_File_Handler(dataset_name="all")
+    all_data = data_file.get_ticker_data(ticker, as_list=False)
+    split_time = pd.Timestamp("2022-06-22", tz='UTC')
+    training_data = all_data.iloc[ all_data.index.to_numpy() < split_time ]
+   # validation_data = all_data.iloc[all_data.index.to_numpy() >= split_time]
+
+    tz = get_ticker_time_zone(ticker) #'^GDAXI'
+    training_data = training_data.tz_convert(tz)
+    #validation_data = validation_data.tz_convert(tz)
+    training_data = training_data.between_time(
+        "09:30", "16:00", # NDX
+        #"09:30", '17:30' # GDAXI
+        )
+    
+    observer = ObservationBuilder(columns, (5,1))
+    observations = observer.make_observations(
+        training_data, 
+        training_data.index[0], 
+        training_data.index[-1], 
+        training_data.index.tz,
+        )
+

@@ -69,9 +69,9 @@ ndx_params = {
     'live_tp': 70,
     'live_sl': 10,
     'live_tl': 60,#np.inf,
-    'up' : 50,
-    'down' : -50,
-    'to' : 60,
+    'up' : 40,
+    'down' : -40,
+    'to' : 30,
     }
 
 gdaxi_params = {
