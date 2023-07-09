@@ -313,3 +313,83 @@ class OutcomeSimulator(object):
         time_indx = df.index[abs_indx].to_numpy() # the datetime when the price has moved by price_delta
         time_indx[none_found] = pd.NaT
         return pd.DatetimeIndex(time_indx, tz = orders.index.tz)
+    
+    
+    def outcome_generator(self, data, orders,):
+        outcomes = orders.copy()
+        outcomes1 = pd.DataFrame(columns = outcomes.columns.append(pd.Index([
+            'Stop_Loss_Hit', 'Take_Profit_Hit', 'Time_Limit_Hit', 'Profit',
+            'Closing_Datetime',
+            ])))
+        open_orders = pd.DataFrame(columns=orders.columns)
+        # Loop over data
+        for t, ohlc in data.iterrows():
+            if len(open_orders) > 0:
+                # Check open orders for exit conditions and close if necessary
+                low_dist = open_orders.Opening_Value - ohlc.Low[0]
+                high_dist = ohlc.High[0] - open_orders.Opening_Value 
+                is_sl = np.logical_or(
+                    np.logical_and(
+                        (open_orders.Direction == "BUY").to_numpy(),
+                        (low_dist >= open_orders.Stop_Loss).to_numpy()
+                        ),
+                    np.logical_and(
+                        (open_orders.Direction == "SELL").to_numpy(), 
+                        (high_dist >= open_orders.Stop_Loss).to_numpy()
+                        )
+                    )
+                is_tp = np.logical_or(
+                    np.logical_and(
+                        (open_orders.Direction == "BUY").to_numpy(),
+                        (high_dist >= open_orders.Take_Profit).to_numpy()
+                        ),
+                    np.logical_and(
+                        (open_orders.Direction == "SELL").to_numpy(), 
+                        (low_dist >= open_orders.Take_Profit).to_numpy()
+                        )
+                    )
+                is_tp = np.logical_and(
+                    is_tp,
+                    np.logical_xor(is_tp, is_sl)
+                    )
+                
+                if is_sl.any():
+                    sl = open_orders.iloc[is_sl]
+                    sl['Stop_Loss_Hit'] = True
+                    sl['Profit'] = -sl.Stop_Loss
+                    sl['Closing_Datetime'] = t
+                    outcomes1 = pd.concat((outcomes1, sl))
+                    
+                if is_tp.any():
+                    tp = open_orders.iloc[is_tp]
+                    tp['Take_Profit_Hit'] = True
+                    tp['Profit'] = tp.Take_Profit
+                    tp['Closing_Datetime'] = t
+                    outcomes1 = pd.concat((outcomes1, tp))
+                
+                time_dist = (t - open_orders.index).seconds / 60 + 1
+                is_tl = time_dist.to_numpy() > open_orders.Time_Limit.to_numpy()
+                if is_tl.any():
+                    tl = open_orders.iloc[is_tl]
+                    tl['Time_Limit_Hit'] = True
+                    directions = np.array([{'BUY': 1,'SELL' : -1}[d] for d in tl.Direction.to_numpy()])
+                    tl['Profit'] = directions * (ohlc.Close[0] - tl.Opening_Value)
+                    tl['Closing_Datetime'] = t
+                    outcomes1 = pd.concat((outcomes1, tl))
+                
+                if is_sl.any() or is_tp.any() or is_tl.any():
+                    open_orders = open_orders.drop(open_orders.index[
+                        np.logical_or(
+                            is_sl,
+                            np.logical_or(is_tp, is_tl),
+                            )
+                        ])
+            # Check for updates to exit conditions (training_ SL)
+            # Check to see if an order is opened
+            if t in outcomes.index:
+                order = outcomes.loc[t]
+                open_orders.loc[order.name] = order
+        # add order to open orders
+        
+        #
+        pass

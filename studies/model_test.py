@@ -30,7 +30,7 @@ tz = get_ticker_time_zone(ticker) #'^GDAXI'
 validation_data = validation_data.tz_convert(tz)
 
 predictions, probabilities, order_datetimes = model.predict(validation_data)
-'''
+
 results = Results(predictions, order_datetimes, ticker,
                     take_profit=model._params['live_tp'],
                     stop_loss=model._params['live_sl'],
@@ -49,4 +49,4 @@ results.plot_position_profit()
 results.plot_position_distribution()
 results.plot_position_profit_distribution()
 results.plot_weekly_profit()
-'''
+
