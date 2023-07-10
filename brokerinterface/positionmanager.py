@@ -198,8 +198,8 @@ class PositionManager(object):
                     quote_id=None,
                     stop_level=None,
                     stop_distance=max(details['min_distance'], details['stop_loss']), 
-                    trailing_stop='false',#str(details['trailing_stop']).lower(),#'false'/'true',
-                    trailing_stop_increment=None,#details['trailing_stop_increment'],
+                    trailing_stop='true',#str(details['trailing_stop']).lower(),#'false'/'true',
+                    trailing_stop_increment=20,#None,#details['trailing_stop_increment'],
                     )
             
                 #log.info(print(pos_data))

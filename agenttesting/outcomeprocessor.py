@@ -328,6 +328,7 @@ class OutcomeSimulator(object):
                 # Check open orders for exit conditions and close if necessary
                 low_dist = open_orders.Opening_Value - ohlc.Low[0]
                 high_dist = ohlc.High[0] - open_orders.Opening_Value 
+                # Check for closable order
                 is_sl = np.logical_or(
                     np.logical_and(
                         (open_orders.Direction == "BUY").to_numpy(),
@@ -353,6 +354,7 @@ class OutcomeSimulator(object):
                     np.logical_xor(is_tp, is_sl)
                     )
                 
+                # Pass closed orders tp outcomes
                 if is_sl.any():
                     sl = open_orders.iloc[is_sl]
                     sl['Stop_Loss_Hit'] = True
@@ -376,7 +378,7 @@ class OutcomeSimulator(object):
                     tl['Profit'] = directions * (ohlc.Close[0] - tl.Opening_Value)
                     tl['Closing_Datetime'] = t
                     outcomes1 = pd.concat((outcomes1, tl))
-                
+                # Remove closed orders
                 if is_sl.any() or is_tp.any() or is_tl.any():
                     open_orders = open_orders.drop(open_orders.index[
                         np.logical_or(
@@ -384,12 +386,127 @@ class OutcomeSimulator(object):
                             np.logical_or(is_tp, is_tl),
                             )
                         ])
-            # Check for updates to exit conditions (training_ SL)
+                    
+            # Apply trailing stop loss
+            if len(open_orders) > 0:
+                if 'Trailing_Stop_Loss' in open_orders.columns:
+                    is_t = np.logical_or(
+                        np.logical_and(
+                            (open_orders.Direction == "BUY").to_numpy(),
+                            (low_dist + open_orders.Stop_Loss >= \
+                             open_orders.Stop_Loss + open_orders.Trailing_Stop_Loss).to_numpy()
+                            ),
+                        np.logical_and(
+                            (open_orders.Direction == "SELL").to_numpy(), 
+                            (high_dist + open_orders.Stop_Loss>= open_orders.Stop_Loss).to_numpy()
+                            )
+                        )
+            
             # Check to see if an order is opened
             if t in outcomes.index:
-                order = outcomes.loc[t]
-                open_orders.loc[order.name] = order
-        # add order to open orders
-        
-        #
-        pass
+                orders_to_add = outcomes.loc[t]
+                #orders_to_add['SL_Level'] = 
+                open_orders.loc[orders_to_add.name] = orders_to_add
+                
+        def outcome_generator1(self, data, orders,):
+            orders = orders.copy()
+            buy_orders = orders.iloc[orders.Direction.to_numpy() == 'BUY']
+            sell_orders = orders.iloc[orders.Direction.to_numpy() == 'SELL']
+            
+            buy_orders['SL_Level'] = buy_orders.Opening_Value - buy_orders.Stop_Loss
+            buy_orders['TP_Level'] = buy_orders.Opening_Value + buy_orders.Take_Profit
+            time_limits = np.array([pd.Timedelta(minutes=tl) for tl in buy_orders.Time_Limit])
+            buy_orders['Max_Time'] = buy_orders.index.to_numpy() + time_limits
+            
+            sell_orders['SL_Level'] = sell_orders.Opening_Value + sell_orders.Stop_Loss
+            sell_orders['TP_Level'] = sell_orders.Opening_Value - sell_orders.Take_Profit
+            time_limits = np.array([pd.Timedelta(minutes=tl) for tl in sell_orders.Time_Limit])
+            sell_orders['Max_Time'] = sell_orders.index.to_numpy() + time_limits
+            
+            outcomes = pd.DataFrame(columns = [
+                'Direction','Opening_Value','Ticker','Take_Profit','Stop_Loss','Time_Limit',
+                'Trailing_Stop_Loss_Increment',
+                'Stop_Loss_Hit', 'Take_Profit_Hit', 'Time_Limit_Hit', 'Profit','Closing_Datetime',
+                ])
+            open_buy_orders = pd.DataFrame(columns = buy_orders.columns)
+            open_sell_orders = pd.DataFrame(columns = sell_orders.columns)
+            
+            for t, ohlc in data.iterrows():
+                is_buy_sl = ohlc.Low[0] <= open_buy_orders.SL_Level.to_numpy()
+                is_buy_tp = ohlc.High[0] > open_buy_orders.TP_Level.to_numpy()
+                is_buy_tl = t >= open_buy_orders.Max_Time.to_numpy()
+                
+                is_sell_sl = ohlc.High[0] >= open_sell_orders.SL_Level.to_numpy()
+                is_sell_tp = ohlc.Low[0] < open_sell_orders.TP_Level.to_numpy()
+                is_sell_tl = t >= open_sell_orders.Max_Time.to_numpy()
+                
+                sl_buy = pd.DataFrame(columns=open_buy_orders.columns)
+                sl_sell = pd.DataFrame(columns=open_buy_orders.columns)
+                if is_buy_sl.any():
+                    sl_buy = open_buy_orders.iloc[is_buy_sl]
+                if is_sell_sl.any():
+                    sl_sell = open_sell_orders.iloc[is_sell_sl]
+                sl = pd.concat((sl_buy, sl_sell))
+                
+                tp_buy = pd.DataFrame(columns=open_buy_orders.columns)
+                tp_sell = pd.DataFrame(columns=open_buy_orders.columns)
+                if is_buy_tp.any():
+                    tp_buy = open_buy_orders.iloc[is_buy_tp]
+                if is_sell_tp.any():
+                    tp_sell = open_sell_orders.iloc[is_sell_tp]
+                tp = pd.concat((tp_buy, tp_sell))
+                
+                tl_buy = pd.DataFrame(columns=open_buy_orders.columns)
+                tl_sell = pd.DataFrame(columns=open_buy_orders.columns)
+                if is_buy_tl.any():
+                    tl_buy = open_buy_orders.iloc[is_buy_tl]
+                if is_sell_tl.any():
+                    tl_sell = open_sell_orders.iloc[is_sell_tl]
+                tl = pd.concat((tl_buy, tl_sell))
+                
+                if len(sl) > 0:
+                    sl['Stop_Loss_Hit'] = True
+                    sl['Take_Profit_Hit'] = False
+                    sl['Time_Limit_Hit'] = False
+                    directions = np.array([{'BUY': 1,'SELL' : -1}[d] for d in sl.Direction.to_numpy()])
+                    sl['Profit'] = directions * (sl.SL_Level - sl.Opening_Value)
+                    sl['Closing_Datetime'] = t
+                    
+                if len(tp) > 0:
+                    tp['Stop_Loss_Hit']  = False
+                    tp['Take_Profit_Hit'] = True
+                    tp['Time_Limit_Hit'] = False
+                    tp['Profit'] = tp.Take_Profit
+                    tp['Closing_Datetime'] = t
+                    
+                if len(tl) > 0:
+                    tl['Stop_Loss_Hit'] = False
+                    tl['Take_Profit_Hit'] = False
+                    tl['Time_Limit_Hit'] = True
+                    directions = np.array([{'BUY': 1,'SELL' : -1}[d] for d in tl.Direction.to_numpy()])
+                    tl['Profit'] = directions * (ohlc.Close[0] - tl.Opening_Value)
+                    tl['Closing_Datetime'] = t
+                
+                closed = pd.concat((sl, tp, tl))
+                outcomes = pd.concat((outcomes, closed))
+                # Remove closed orders
+                if len(closed) > 0 :
+                    open_buy_orders = open_buy_orders.drop(closed.index[(closed.Direction=='BUY').to_numpy()])
+                    open_sell_orders = open_sell_orders.drop(closed.index[(closed.Direction=='SELL').to_numpy()])
+                
+                #Apply trailing sl
+                is_buy_tsli = ohlc.High[0] > open_buy_orders.Opening_Value + open_buy_orders.Trailing_Stop_Loss_Increment
+                if is_buy_tsli.any():
+                    open_buy_orders.SL_Level[is_buy_tsli] += open_buy_orders.Trailing_Stop_Loss_Increment[is_buy_tsli]
+                is_sell_tsli = ohlc.High[0] > open_sell_orders.Opening_Value + open_sell_orders.Trailing_Stop_Loss_Increment
+                if is_sell_tsli.any():
+                    open_sell_orders.SL_Level[is_sell_tsli] += open_sell_orders.Trailing_Stop_Loss_Increment[is_sell_tsli]
+                    
+                # Check to see if an order is opened
+                if t in buy_orders.index:
+                    orders_to_add = buy_orders.loc[t]
+                    open_buy_orders.loc[orders_to_add.name] = orders_to_add
+                if t in sell_orders.index:
+                    orders_to_add = sell_orders.loc[t]
+                    open_sell_orders.loc[orders_to_add.name] = orders_to_add
+                
