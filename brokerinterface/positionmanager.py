@@ -239,7 +239,7 @@ class PositionManager(object):
                 )
                 #print(pos_data)
             except Exception as e:
-                if str(e).find("resp 404") != -1:
+                if str(e).find("invalid.url") != -1:
                     success = True
                     log.info(f'Position {dealId} was not found!')
                     break
