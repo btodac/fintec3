@@ -318,18 +318,25 @@ class OutcomeSimulator(object):
                    
     def determine_outcomes(self, data, orders, TSLI=20):
         orders['Trailing_Stop_Loss_Increment'] = TSLI
+        time_limits = np.array([pd.Timedelta(minutes=tl) for tl in orders.Time_Limit])
+        maxtime = orders.index.to_numpy() + time_limits
+        end_of_day = [data.index[data.index.date == d].max() for d in np.unique(data.index.date)]
+        end_of_day = dict(zip(pd.DatetimeIndex(end_of_day).date, end_of_day))
+        maxtime = [min(end_of_day[t.date()], t + pd.Timedelta(minutes=order.Time_Limit)) \
+                   for t, order in orders.iterrows()]
+        orders['Max_Time'] = maxtime
         buy_orders = orders.iloc[orders.Direction.to_numpy() == 'BUY']
         sell_orders = orders.iloc[orders.Direction.to_numpy() == 'SELL']
         
         buy_orders['SL_Level'] = buy_orders.Opening_Value - buy_orders.Stop_Loss
         buy_orders['TP_Level'] = buy_orders.Opening_Value + buy_orders.Take_Profit
-        time_limits = np.array([pd.Timedelta(minutes=tl) for tl in buy_orders.Time_Limit])
-        buy_orders['Max_Time'] = buy_orders.index.to_numpy() + time_limits
+        #time_limits = np.array([pd.Timedelta(minutes=tl) for tl in buy_orders.Time_Limit])
+        #buy_orders['Max_Time'] = buy_orders.index.to_numpy() + time_limits
         
         sell_orders['SL_Level'] = sell_orders.Opening_Value + sell_orders.Stop_Loss
         sell_orders['TP_Level'] = sell_orders.Opening_Value - sell_orders.Take_Profit
-        time_limits = np.array([pd.Timedelta(minutes=tl) for tl in sell_orders.Time_Limit])
-        sell_orders['Max_Time'] = sell_orders.index.to_numpy() + time_limits
+        #time_limits = np.array([pd.Timedelta(minutes=tl) for tl in sell_orders.Time_Limit])
+        #sell_orders['Max_Time'] = sell_orders.index.to_numpy() + time_limits
         
         outcomes = pd.DataFrame(columns = [
             'Direction','Opening_Value','Ticker','Take_Profit','Stop_Loss','Time_Limit',
@@ -419,7 +426,7 @@ class OutcomeSimulator(object):
                 open_sell_orders.loc[orders_to_add.name] = orders_to_add
         
         outcomes['Profit'] = outcomes['Profit'].to_numpy().astype(np.float32) 
-        s = np.array([OutcomeSimulator.spreads[ticker] for ticker in orders['Ticker']])
+        s = np.array([OutcomeSimulator.spreads[ticker] for ticker in outcomes['Ticker']])
         #m = np.array([OutcomeSimulator.multipliers[ticker] for ticker in orders['Ticker']])
         outcomes['Profit'] = outcomes['Profit'] - s
         outcomes = outcomes.sort_index()

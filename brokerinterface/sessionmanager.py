@@ -47,6 +47,8 @@ class SessionManager(object):
             if old_are_agents_active and not are_agents_active:
                 self.stop_position_manager()
                 self.ig_manager.stop()
+                
+            old_are_agents_active = are_agents_active
         
         self.stop_agents()
         self.stop_position_manager() 
