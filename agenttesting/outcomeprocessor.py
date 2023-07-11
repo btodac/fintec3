@@ -61,8 +61,10 @@ class OutcomeSimulator(object):
         pt['Profit (day)'] = orders['Profit'].resample('1B',closed='right',label='right').sum().mean()
         pt['Profit (week)'] = orders['Profit'].resample('1W',closed='right',label='right').sum().mean()
         pt['Avg. Profit'] = pt['Profit'] / pt['N_Trades']
-        pt['Avg. Win'] = orders.iloc[orders.loc[:,'Take_Profit_Hit'].to_numpy()].loc[:,'Profit'].mean()
-        pt['Avg. Lose'] = orders.iloc[orders.loc[:,'Stop_Loss_Hit'].to_numpy()].loc[:,'Profit'].mean()
+        pt['Avg. Win'] = orders.Profit[orders.Profit.to_numpy() > 0].mean()
+        #orders.iloc[orders.loc[:,'Take_Profit_Hit'].to_numpy()].loc[:,'Profit'].mean()
+        pt['Avg. Lose'] = orders.Profit[orders.Profit.to_numpy() < 0].mean()
+        #orders.iloc[orders.loc[:,'Stop_Loss_Hit'].to_numpy()].loc[:,'Profit'].mean()
         pt['Avg. Timeout'] = orders.iloc[orders.loc[:,'Time_Limit_Hit'].to_numpy()].loc[:,'Profit'].mean()
         profit = orders.iloc[orders.loc[:,'Profit'].to_numpy() > 0].loc[:,'Profit'].sum()
         loss = orders.iloc[orders.loc[:,'Profit'].to_numpy() < 0].loc[:,'Profit'].sum()
@@ -416,6 +418,10 @@ class OutcomeSimulator(object):
                 orders_to_add = sell_orders.loc[t]
                 open_sell_orders.loc[orders_to_add.name] = orders_to_add
         
-        outcomes['Profit'] = outcomes['Profit'].to_numpy().astype(np.float32)
+        outcomes['Profit'] = outcomes['Profit'].to_numpy().astype(np.float32) 
+        s = np.array([OutcomeSimulator.spreads[ticker] for ticker in orders['Ticker']])
+        #m = np.array([OutcomeSimulator.multipliers[ticker] for ticker in orders['Ticker']])
+        outcomes['Profit'] = outcomes['Profit'] - s
+        outcomes = outcomes.sort_index()
         return outcomes
                 
