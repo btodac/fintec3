@@ -152,6 +152,7 @@ class MarketAgent(object):
     @property
     def subscription(self):
         return self.market_data_store.data_subscription
+    
     def __del__(self):
         pass
         '''

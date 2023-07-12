@@ -17,7 +17,7 @@ class SessionManager(object):
     def __init__(self, agents, ig_manager):
         log.debug('Starting session manager')
         self.agents = agents
-        self.position_manager = None
+        self.position_manager = PositionManager()
         self.ig_manager = ig_manager
         
         self.start()
@@ -58,12 +58,12 @@ class SessionManager(object):
         agents_active = False
         for agent in self.agents:
             if not agent.is_active and agent.is_in_trading_period:  
-                if self.position_manager is None:
-                    self.start_position_manager()                    
+                if not self.position_manager.is_active:
+                    self.position_manager.start(self.ig_manager)
                 agent.start(self.position_manager)
                 self.ig_manager.add_subscription(
                     agent.subscription, 
-                    agent
+                    agent,
                     )
                 
             elif agent.is_active and not agent.is_in_trading_period:
@@ -73,17 +73,7 @@ class SessionManager(object):
                     
             agents_active = agents_active or agent.is_active
         return agents_active
-    
-    def start_position_manager(self):
-        if self.position_manager is None:
-            self.position_manager = PositionManager(
-                self.ig_manager,
-                )
-            self.ig_manager.add_subscription(
-                self.position_manager.subscription,
-                self.position_manager,
-                )
-        
+           
     def stop_position_manager(self):
         self.position_manager.stop()
         if self.position_manager.sub_id is not None:

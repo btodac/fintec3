@@ -23,7 +23,12 @@ class IGStreamService(object):
         self.ls_client = None
 
     def create_session(self, encryption=False, version='2'):
-        ig_session = self.ig_service.create_session(encryption=encryption, version=version)
+        try:
+            ig_session = self.ig_service.read_session(fetch_session_tokens='false')
+            #self.lightstreamerEndpoint = self.ig_service.
+        except ConnectionError:
+            ig_session = self.ig_service.create_session(encryption=encryption, version=version)
+            #self.lightstreamerEndpoint = ig_session['lightstreamerEndpoint']
         # if we have created a v3 session, we also need the session tokens
         if version == '3':
             self.ig_service.read_session(fetch_session_tokens='true')

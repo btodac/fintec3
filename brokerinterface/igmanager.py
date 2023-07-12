@@ -47,6 +47,9 @@ class IGManager(object):
             )
             ig_service.create_session()
             self.ig_service = ig_service
+        #else:
+        #    self.ig_service.read_session(fetch_session_tokens='true')
+        
     
     def stop_service(self):
         if self.ig_service is not None:

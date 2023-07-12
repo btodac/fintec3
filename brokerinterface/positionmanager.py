@@ -39,12 +39,8 @@ class PositionManager(object):
     and mirror changes to OTC positions. 
     '''
     
-    def __init__(self, ig_manager, n_max_positions=1):
-        self.open_fcn = ig_manager.open_fcn
-        self.close_fcn = ig_manager.close_fcn
+    def __init__(self, n_max_positions=1):
         self.n_max_positions = n_max_positions
-        
-        acc_number = ig_manager.account.acc_number
         
         self._positions_lock = RLock()
         self.positions = {}
@@ -53,16 +49,10 @@ class PositionManager(object):
         self._cooldown_end_time = pd.Timestamp.now('UTC')
         self._is_in_cooldown = False
         
-        self.subscription = Subscription(mode="DISTINCT", 
-                                         items=["TRADE:" + acc_number], 
-                                         fields=["OPU"])
-        self.subscription.addlistener(self.position_watcher)
-        
         self.sub_id = None
         self._stop_updating = Event()
-        log.info('Starting Position Manager update thread')
+        
         self.update_thread = Thread(target=self.update_loop, name="Position manager updater")
-        self.update_thread.start()
     
     def __del__(self):
         pass
@@ -71,13 +61,43 @@ class PositionManager(object):
         self.open_fcn = None
         self.close_fcn = None
         '''       
-             
+    
+    @property
+    def is_active(self):
+        return self.update_thread.is_alive()
+    
+    def start(self, ig_manager):
+        self.open_fcn = ig_manager.open_fcn
+        self.close_fcn = ig_manager.close_fcn     
+        self.subscription = Subscription(
+            mode="DISTINCT", 
+            items=["TRADE:" + ig_manager.account.acc_number], 
+            fields=["OPU"]
+            )
+        self.subscription.addlistener(self.position_watcher)
+        ig_manager.add_subscription(
+            self.subscription,
+            self
+            )
+        
+        self._stop_updating.clear()
+        if not self.update_thread.is_alive():
+            log.info('Starting Position Manager update thread')
+            try:
+                self.update_thread.start()
+            except RuntimeError:
+                self.update_thread = Thread(
+                    target=self.update_loop, name="Position manager updater",
+                    )
+                self.update_thread.start()
+        
     def stop(self,):
         log.info('Stopping Position Manager update thread')
-        self.clear()
         if self.update_thread.is_alive():
             self._stop_updating.set()
             self.update_thread.join()
+        
+        self.clear()
         
         filename = '/home/mtolladay/Documents/finance/trades/' \
             + 'PosManTrades_' + pd.Timestamp.now(tz='UTC').strftime('%Y-%m-%d_%X')
